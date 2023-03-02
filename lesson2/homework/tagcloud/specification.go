@@ -44,6 +44,7 @@ func (cloud *TagCloud) AddTag(tag string) {
 // if n is greater that TagCloud size then all elements should be returned
 // thread-safety is not needed
 // there are no restrictions on time complexity
+
 func (cloud TagCloud) TopN(n int) []TagStat {
 	var ans []TagStat
 	for i := 0; i < n && i < len(cloud.memory); i++ {
