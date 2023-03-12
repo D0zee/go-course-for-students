@@ -5,18 +5,19 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"strings"
 )
 
 type Options struct {
-	From      string
-	To        string
-	Offset    int64
-	Limit     int64
-	BlockSize int64
-	Conv      []string
+	From              string
+	To                string
+	Offset            int64
+	Limit             int64
+	BlockSize         int64
+	Conv              []string
+	LimitProvided     bool
+	BlockSizeProvided bool
 }
 
 func ParseFlags() (*Options, error) {
@@ -25,14 +26,54 @@ func ParseFlags() (*Options, error) {
 	flag.StringVar(&opts.From, "from", "", "file to read. by default - stdin")
 	flag.StringVar(&opts.To, "to", "", "file to write. by default - stdout")
 	flag.Int64Var(&opts.Offset, "offset", 0, "count of bytes from begin of file, which program must pass. by default - 0")
-	flag.Int64Var(&opts.Limit, "limit", math.MaxInt32, "max count of copy bytes. by default value is more than size of file - MaxInt32")
-	flag.Int64Var(&opts.BlockSize, "block-size", opts.Limit, "size of one block for copying. By default it equals opts.Limit")
-	var names string
-	flag.StringVar(&names, "name", "", "conversations under text")
-	opts.Conv = strings.Split(names, ",")
-	flag.Parse()
+	flag.Int64Var(&opts.Limit, "limit", 0, "max count of copy bytes. by default value is more than size of file - MaxInt32")
+	flag.Int64Var(&opts.BlockSize, "block-size", 0, "size of one block for copying. By default it equals opts.Limit")
+	convParameters := ""
+	flag.StringVar(&convParameters, "name", "", "conversations under text")
 
+	flag.Parse()
+	if convParameters != "" {
+
+		opts.Conv = strings.Split(convParameters, ",")
+	}
+
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "limit" {
+			opts.LimitProvided = true
+		}
+		if f.Name == "block-size" {
+			opts.BlockSizeProvided = true
+		}
+	})
 	return &opts, nil
+}
+
+func ValidateConv(opt Options) error {
+	if len(opt.Conv) == 0 {
+		return nil
+	}
+	allowedValues := map[string]interface{}{
+		"upper_case":  nil,
+		"lower_case":  nil,
+		"trim_spaces": nil,
+	}
+	containsUpperCase := false
+	containsLowerCase := false
+	for _, value := range opt.Conv {
+		if _, exists := allowedValues[value]; !exists {
+			return fmt.Errorf("invalid value '%s' in -conv flag", value)
+		}
+		if value == "upper_case" {
+			containsUpperCase = true
+		}
+		if value == "lower_case" {
+			containsLowerCase = true
+		}
+	}
+	if containsUpperCase && containsLowerCase {
+		return errors.New("-conv parameters cannot contain both upper_case and lower_case")
+	}
+	return nil
 }
 
 func ValidateOptions(opt *Options) error {
@@ -45,7 +86,10 @@ func ValidateOptions(opt *Options) error {
 	if opt.BlockSize < 0 {
 		return errors.New("-block-size is not correct")
 	}
-	return nil
+	if len(opt.Conv) >= 2 {
+		return errors.New("wrong count of conv opt")
+	}
+	return ValidateConv(*opt)
 }
 
 func ReadBytes(opts *Options) ([]byte, error) {
@@ -57,6 +101,13 @@ func ReadBytes(opts *Options) ([]byte, error) {
 			return nil, err
 		}
 		defer stream.Close()
+	}
+	if !opts.LimitProvided { // if user does not provide these parameters, it will be equal size of input
+		fileInfo, _ := stream.Stat()
+		opts.Limit = fileInfo.Size() + 1
+	}
+	if !opts.BlockSizeProvided {
+		opts.BlockSize = opts.Limit
 	}
 	reader := io.Reader(stream)
 	builder := strings.Builder{}
@@ -71,20 +122,17 @@ func ReadBytes(opts *Options) ([]byte, error) {
 }
 
 func WriteBytes(opts *Options, buf []byte) error {
-	var writer io.WriteCloser
-	if len(opts.To) == 0 {
-		writer = io.WriteCloser(os.Stdout)
-	} else {
-		stream, err := os.OpenFile(opts.To, os.O_CREATE|os.O_EXCL|os.O_WRONLY, os.ModePerm)
+	stream := os.Stdout
+	if opts.To != "" {
+		var err error
+		stream, err = os.OpenFile(opts.To, os.O_CREATE|os.O_EXCL|os.O_WRONLY, os.ModePerm)
 		checkError(err)
-		writer = io.WriteCloser(stream)
 	}
-
+	writer := io.WriteCloser(stream)
 	_, err := writer.Write(buf)
 	if err != nil {
 		return err
 	}
-	//println("before reading")
 	err = writer.Close()
 	if err != nil {
 		return err
@@ -94,7 +142,7 @@ func WriteBytes(opts *Options, buf []byte) error {
 
 func checkError(err error) {
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "can not parse flags:", err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
@@ -108,11 +156,8 @@ func main() {
 
 	bufFromReader, err := ReadBytes(opts)
 	checkError(err)
-	//println("read: bytes")
 
 	err = WriteBytes(opts, bufFromReader)
 	checkError(err)
-	//println("write: bytes")
 
-	// todo: implement the functional requirements described in read.me
 }
