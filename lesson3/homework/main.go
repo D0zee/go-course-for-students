@@ -13,9 +13,9 @@ import (
 type Options struct {
 	From      string
 	To        string
-	Offset    int
-	Limit     int
-	BlockSize int
+	Offset    int64
+	Limit     int64
+	BlockSize int64
 	Conv      []string
 }
 
@@ -24,14 +24,13 @@ func ParseFlags() (*Options, error) {
 
 	flag.StringVar(&opts.From, "from", "", "file to read. by default - stdin")
 	flag.StringVar(&opts.To, "to", "", "file to write. by default - stdout")
-	flag.IntVar(&opts.Offset, "offset", 0, "count of bytes from begin of file, which program must pass. by default - 0")
-	flag.IntVar(&opts.Limit, "limit", math.MaxInt32, "max count of copy bytes. by default value is more than size of file - MaxInt32")
-	flag.IntVar(&opts.BlockSize, "block-size", opts.Limit, "size of one block for copying. By default it equals opts.Limit")
+	flag.Int64Var(&opts.Offset, "offset", 0, "count of bytes from begin of file, which program must pass. by default - 0")
+	flag.Int64Var(&opts.Limit, "limit", math.MaxInt32, "max count of copy bytes. by default value is more than size of file - MaxInt32")
+	flag.Int64Var(&opts.BlockSize, "block-size", opts.Limit, "size of one block for copying. By default it equals opts.Limit")
 	var names string
 	flag.StringVar(&names, "name", "", "conversations under text")
 	opts.Conv = strings.Split(names, ",")
 	flag.Parse()
-	//fmt.Println(opts)
 
 	return &opts, nil
 }
@@ -50,46 +49,25 @@ func ValidateOptions(opt *Options) error {
 }
 
 func ReadBytes(opts *Options) ([]byte, error) {
-	var reader io.Reader
 	stream := os.Stdin
-	bufferSize := opts.Limit + opts.Offset
-
-	if len(opts.From) != 0 {
+	if opts.From != "" {
 		var err error
 		stream, err = os.Open(opts.From)
 		if err != nil {
 			return nil, err
 		}
-		fileInfo, err := stream.Stat()
-		if err != nil {
-			return nil, err
-		}
-		bufferSize = int(fileInfo.Size())
+		defer stream.Close()
 	}
+	reader := io.Reader(stream)
+	builder := strings.Builder{}
+	cntReadBytes, _ := io.CopyN(io.Discard, reader, opts.Offset)
+	written, _ := io.CopyN(&builder, reader, opts.Limit)
+	cntReadBytes += written
 
-	buf := make([]byte, bufferSize)
-
-	reader = io.Reader(stream)
-	var cntReadBytes int
-	for {
-		cntBytes, err := reader.Read(buf)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-		cntReadBytes += cntBytes
-		if cntReadBytes > opts.Limit+opts.Offset {
-			break
-		}
-	}
 	if opts.Offset >= cntReadBytes {
 		return nil, errors.New("offset must be less than input.size")
 	}
-	left := int(math.Min(float64(cntReadBytes), float64(opts.Limit))) + opts.Offset
-	buf = buf[opts.Offset:left]
-	return buf, nil
+	return []byte(builder.String()), nil
 }
 
 func WriteBytes(opts *Options, buf []byte) error {
@@ -130,9 +108,11 @@ func main() {
 
 	bufFromReader, err := ReadBytes(opts)
 	checkError(err)
+	//println("read: bytes")
 
 	err = WriteBytes(opts, bufFromReader)
 	checkError(err)
+	//println("write: bytes")
 
 	// todo: implement the functional requirements described in read.me
 }
