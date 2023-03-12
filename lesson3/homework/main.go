@@ -1,7 +1,6 @@
 package main
 
 import (
-
 	"bytes"
 	"errors"
 	"flag"
@@ -19,7 +18,7 @@ type Options struct {
 	BlockSize     int64
 	Conv          []string
 	LimitProvided bool
-
+}
 
 func ParseFlags() (*Options, error) {
 	var opts Options
