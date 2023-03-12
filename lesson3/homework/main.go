@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -10,14 +11,13 @@ import (
 )
 
 type Options struct {
-	From              string
-	To                string
-	Offset            int64
-	Limit             int64
-	BlockSize         int64
-	Conv              []string
-	LimitProvided     bool
-	BlockSizeProvided bool
+	From          string
+	To            string
+	Offset        int64
+	Limit         int64
+	BlockSize     int64
+	Conv          []string
+	LimitProvided bool
 }
 
 func ParseFlags() (*Options, error) {
@@ -27,13 +27,12 @@ func ParseFlags() (*Options, error) {
 	flag.StringVar(&opts.To, "to", "", "file to write. by default - stdout")
 	flag.Int64Var(&opts.Offset, "offset", 0, "count of bytes from begin of file, which program must pass. by default - 0")
 	flag.Int64Var(&opts.Limit, "limit", 0, "max count of copy bytes. by default value is more than size of file - MaxInt32")
-	flag.Int64Var(&opts.BlockSize, "block-size", 0, "size of one block for copying. By default it equals opts.Limit")
+	flag.Int64Var(&opts.BlockSize, "block-size", 1024, "size of one block for copying. By default it equals opts.Limit")
 	convParameters := ""
-	flag.StringVar(&convParameters, "name", "", "conversations under text")
+	flag.StringVar(&convParameters, "conv", "", "conversations under text")
 
 	flag.Parse()
 	if convParameters != "" {
-
 		opts.Conv = strings.Split(convParameters, ",")
 	}
 
@@ -41,14 +40,11 @@ func ParseFlags() (*Options, error) {
 		if f.Name == "limit" {
 			opts.LimitProvided = true
 		}
-		if f.Name == "block-size" {
-			opts.BlockSizeProvided = true
-		}
 	})
 	return &opts, nil
 }
 
-func ValidateConv(opt Options) error {
+func ValidateConv(opt *Options) error {
 	if len(opt.Conv) == 0 {
 		return nil
 	}
@@ -86,58 +82,83 @@ func ValidateOptions(opt *Options) error {
 	if opt.BlockSize < 0 {
 		return errors.New("-block-size is not correct")
 	}
-	if len(opt.Conv) >= 2 {
+	if len(opt.Conv) > 2 {
 		return errors.New("wrong count of conv opt")
 	}
-	return ValidateConv(*opt)
+	return ValidateConv(opt)
 }
 
-func ReadBytes(opts *Options) ([]byte, error) {
+func ReadBytes(opts *Options) (str string, err error) {
 	stream := os.Stdin
 	if opts.From != "" {
-		var err error
 		stream, err = os.Open(opts.From)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
-		defer stream.Close()
+		defer func() {
+			cerr := stream.Close()
+			if err == nil {
+				err = cerr
+			}
+		}()
+
 	}
 	if !opts.LimitProvided { // if user does not provide these parameters, it will be equal size of input
 		fileInfo, _ := stream.Stat()
 		opts.Limit = fileInfo.Size() + 1
 	}
-	if !opts.BlockSizeProvided {
-		opts.BlockSize = opts.Limit
-	}
 	reader := io.Reader(stream)
 	builder := strings.Builder{}
-	cntReadBytes, _ := io.CopyN(io.Discard, reader, opts.Offset)
-	written, _ := io.CopyN(&builder, reader, opts.Limit)
-	cntReadBytes += written
+	cntReadBytes := int64(0)
+
+	cntWrittenBytes, _ := io.CopyN(io.Discard, reader, opts.Offset)
+	cntReadBytes += cntWrittenBytes
+
+	cntWrittenBytes, _ = io.CopyN(&builder, reader, opts.Limit)
+	cntReadBytes += cntWrittenBytes
 
 	if opts.Offset >= cntReadBytes {
-		return nil, errors.New("offset must be less than input.size")
+		return "", errors.New("offset must be less than input.size")
 	}
-	return []byte(builder.String()), nil
+	str = builder.String()
+	return str, err
 }
 
-func WriteBytes(opts *Options, buf []byte) error {
+type ConverterWriter struct {
+	writer           io.Writer
+	converterOptions []string
+}
+
+func (converter *ConverterWriter) Write(p []byte) (int, error) {
+	if converter.converterOptions != nil {
+		for _, c := range converter.converterOptions {
+			if c == "upper_case" {
+				p = bytes.ToUpper(p)
+			}
+			if c == "lower_case" {
+				p = bytes.ToLower(p)
+			}
+			if c == "trim_spaces" {
+				p = bytes.TrimSpace(p)
+			}
+		}
+	}
+	return converter.writer.Write(p)
+}
+
+func WriteBytes(opts *Options, str string) (err error) {
 	stream := os.Stdout
 	if opts.To != "" {
-		var err error
 		stream, err = os.OpenFile(opts.To, os.O_CREATE|os.O_EXCL|os.O_WRONLY, os.ModePerm)
 		checkError(err)
 	}
 	writer := io.WriteCloser(stream)
-	_, err := writer.Write(buf)
+	cw := ConverterWriter{writer: writer, converterOptions: opts.Conv}
+	_, err = cw.Write([]byte(str))
 	if err != nil {
 		return err
 	}
-	err = writer.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	return
 }
 
 func checkError(err error) {
@@ -154,10 +175,9 @@ func main() {
 	err = ValidateOptions(opts)
 	checkError(err)
 
-	bufFromReader, err := ReadBytes(opts)
+	stringFromReader, err := ReadBytes(opts)
 	checkError(err)
 
-	err = WriteBytes(opts, bufFromReader)
+	err = WriteBytes(opts, stringFromReader)
 	checkError(err)
-
 }
