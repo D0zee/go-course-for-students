@@ -34,6 +34,8 @@ type workerOutput struct {
 	res Result
 }
 
+//func worker(jobs<- )
+
 func collectFromChannel(channel <-chan workerOutput, resInDir *Result, length int) error {
 	for i := 0; i < length; i++ {
 		resFromChannel := <-channel
@@ -52,8 +54,7 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 		return Result{}, err
 	}
 
-	fileChannel := make(chan workerOutput, len(files))
-	dirChannel := make(chan workerOutput, len(dirs))
+	outputChannel := make(chan workerOutput, len(files)+len(dirs))
 
 	go func(channel chan<- workerOutput) {
 		res := Result{}
@@ -65,7 +66,7 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 				channel <- workerOutput{err: err, res: Result{size, 1}}
 			}
 		}
-	}(fileChannel)
+	}(outputChannel)
 
 	for _, dir := range dirs {
 		go func(dir Dir, channel chan<- workerOutput) {
@@ -75,16 +76,11 @@ func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 			} else {
 				channel <- workerOutput{res: resLocal, err: nil}
 			}
-		}(dir, dirChannel)
+		}(dir, outputChannel)
 	}
 
 	resInDir := Result{}
-	err = collectFromChannel(fileChannel, &resInDir, len(files))
-	if err != nil {
-		return Result{}, err
-	}
-
-	err = collectFromChannel(dirChannel, &resInDir, len(dirs))
+	err = collectFromChannel(outputChannel, &resInDir, len(files)+len(dirs))
 	if err != nil {
 		return Result{}, err
 	}
