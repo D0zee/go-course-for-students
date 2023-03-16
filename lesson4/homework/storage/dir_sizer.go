@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"errors"
+	"fmt"
 )
 
 // Result represents the Size function result
@@ -23,6 +25,7 @@ type sizer struct {
 	// maxWorkersCount number of workers for asynchronous run
 	maxWorkersCount int
 
+	q chan Result
 	// TODO: add other fields as you wish
 }
 
@@ -33,5 +36,32 @@ func NewSizer() DirSizer {
 
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	// TODO: implement this
-	return Result{}, nil
+
+	dirs, files, err := d.Ls(ctx)
+	if err != nil {
+
+		return Result{}, err
+	}
+
+	res := Result{}
+	for _, file := range files {
+		size, err := file.Stat(ctx)
+		if err != nil {
+			return Result{2, 0}, errors.New("file does not exist")
+		}
+		res.Size += size
+		res.Count++
+	}
+
+	for _, dir := range dirs {
+		resLocal, err := a.Size(ctx, dir)
+		if err != nil {
+			return Result{}, err
+		}
+		res.Size += resLocal.Size
+		res.Count += resLocal.Count
+	}
+	fmt.Println("(size, cnt) in [", d.Name(), "]: (", res.Size, ", ", res.Count, ")")
+
+	return res, nil
 }
