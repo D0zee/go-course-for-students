@@ -2,8 +2,6 @@ package storage
 
 import (
 	"context"
-	"errors"
-	"fmt"
 )
 
 // Result represents the Size function result
@@ -24,9 +22,6 @@ type DirSizer interface {
 type sizer struct {
 	// maxWorkersCount number of workers for asynchronous run
 	maxWorkersCount int
-
-	q chan Result
-	// TODO: add other fields as you wish
 }
 
 // NewSizer returns new DirSizer instance
@@ -34,34 +29,65 @@ func NewSizer() DirSizer {
 	return &sizer{}
 }
 
-func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
-	// TODO: implement this
+type workerOutput struct {
+	err error
+	res Result
+}
 
+func collectFromChannel(channel <-chan workerOutput, resInDir *Result, length int) error {
+	for i := 0; i < length; i++ {
+		resFromChannel := <-channel
+		if resFromChannel.err != nil {
+			return resFromChannel.err
+		}
+		resInDir.Size += resFromChannel.res.Size
+		resInDir.Count += resFromChannel.res.Count
+	}
+	return nil
+}
+
+func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
 	dirs, files, err := d.Ls(ctx)
 	if err != nil {
-
 		return Result{}, err
 	}
 
-	res := Result{}
-	for _, file := range files {
-		size, err := file.Stat(ctx)
-		if err != nil {
-			return Result{2, 0}, errors.New("file does not exist")
+	fileChannel := make(chan workerOutput, len(files))
+	dirChannel := make(chan workerOutput, len(dirs))
+
+	go func(channel chan<- workerOutput) {
+		res := Result{}
+		for _, file := range files {
+			size, err := file.Stat(ctx)
+			if err != nil {
+				channel <- workerOutput{err: err, res: res}
+			} else {
+				channel <- workerOutput{err: err, res: Result{size, 1}}
+			}
 		}
-		res.Size += size
-		res.Count++
-	}
+	}(fileChannel)
 
 	for _, dir := range dirs {
-		resLocal, err := a.Size(ctx, dir)
-		if err != nil {
-			return Result{}, err
-		}
-		res.Size += resLocal.Size
-		res.Count += resLocal.Count
+		go func(dir Dir, channel chan<- workerOutput) {
+			resLocal, err := a.Size(ctx, dir)
+			if err != nil {
+				channel <- workerOutput{res: resLocal, err: err}
+			} else {
+				channel <- workerOutput{res: resLocal, err: nil}
+			}
+		}(dir, dirChannel)
 	}
-	fmt.Println("(size, cnt) in [", d.Name(), "]: (", res.Size, ", ", res.Count, ")")
 
-	return res, nil
+	resInDir := Result{}
+	err = collectFromChannel(fileChannel, &resInDir, len(files))
+	if err != nil {
+		return Result{}, err
+	}
+
+	err = collectFromChannel(dirChannel, &resInDir, len(dirs))
+	if err != nil {
+		return Result{}, err
+	}
+
+	return resInDir, nil
 }
