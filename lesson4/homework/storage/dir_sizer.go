@@ -21,7 +21,7 @@ type DirSizer interface {
 // sizer implement the DirSizer interface
 type sizer struct {
 	// maxWorkersCount number of workers for asynchronous run
-	maxWorkersCount int
+	// maxWorkersCount int
 }
 
 // NewSizer returns new DirSizer instance
