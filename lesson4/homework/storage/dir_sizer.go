@@ -34,7 +34,6 @@ type workerOutput struct {
 	res Result
 }
 
-//func worker(jobs<- )
 
 func collectFromChannel(channel <-chan workerOutput, resInDir *Result, length int) error {
 	for i := 0; i < length; i++ {
