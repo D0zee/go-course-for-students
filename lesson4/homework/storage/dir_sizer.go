@@ -22,8 +22,6 @@ type DirSizer interface {
 type sizer struct {
 	// maxWorkersCount number of workers for asynchronous run
 	maxWorkersCount int
-
-	// TODO: add other fields as you wish
 }
 
 // NewSizer returns new DirSizer instance
@@ -31,7 +29,60 @@ func NewSizer() DirSizer {
 	return &sizer{}
 }
 
+type workerOutput struct {
+	err error
+	res Result
+}
+
+
+func collectFromChannel(channel <-chan workerOutput, resInDir *Result, length int) error {
+	for i := 0; i < length; i++ {
+		resFromChannel := <-channel
+		if resFromChannel.err != nil {
+			return resFromChannel.err
+		}
+		resInDir.Size += resFromChannel.res.Size
+		resInDir.Count += resFromChannel.res.Count
+	}
+	return nil
+}
+
 func (a *sizer) Size(ctx context.Context, d Dir) (Result, error) {
-	// TODO: implement this
-	return Result{}, nil
+	dirs, files, err := d.Ls(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+
+	outputChannel := make(chan workerOutput, len(files)+len(dirs))
+
+	go func(channel chan<- workerOutput) {
+		res := Result{}
+		for _, file := range files {
+			size, err := file.Stat(ctx)
+			if err != nil {
+				channel <- workerOutput{err: err, res: res}
+			} else {
+				channel <- workerOutput{err: err, res: Result{size, 1}}
+			}
+		}
+	}(outputChannel)
+
+	for _, dir := range dirs {
+		go func(dir Dir, channel chan<- workerOutput) {
+			resLocal, err := a.Size(ctx, dir)
+			if err != nil {
+				channel <- workerOutput{res: resLocal, err: err}
+			} else {
+				channel <- workerOutput{res: resLocal, err: nil}
+			}
+		}(dir, outputChannel)
+	}
+
+	resInDir := Result{}
+	err = collectFromChannel(outputChannel, &resInDir, len(files)+len(dirs))
+	if err != nil {
+		return Result{}, err
+	}
+
+	return resInDir, nil
 }
