@@ -16,9 +16,7 @@ jobs:
     strategy:
       matrix:
         work_dir:
-          - ./lesson1/homework
-          - ./lesson2/homework
-          - ./lesson3/homework
+          - ./lesson4/homework
     steps:
       - uses: actions/checkout@v3
 
@@ -32,7 +30,6 @@ jobs:
         run: |
           go mod tidy
           go build -v ./...
-
       - name: Lint
         uses: golangci/golangci-lint-action@v3
         with:
@@ -43,4 +40,4 @@ jobs:
         working-directory: ${{ matrix.work_dir }}
         run: |
           go mod tidy
-          go test -v ./...
+          go test -v -race ./...
