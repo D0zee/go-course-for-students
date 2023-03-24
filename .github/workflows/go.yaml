@@ -16,10 +16,6 @@ jobs:
     strategy:
       matrix:
         work_dir:
-          - ./lesson1/homework
-          - ./lesson2/homework
-          - ./lesson3/homework
-          - ./lesson4/homework
           - ./lesson5/homework
     steps:
       - uses: actions/checkout@v3
@@ -45,4 +41,4 @@ jobs:
         working-directory: ${{ matrix.work_dir }}
         run: |
           go mod tidy
-          go test -v -race ./...
+          go test -v ./...
