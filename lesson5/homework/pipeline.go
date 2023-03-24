@@ -15,11 +15,8 @@ func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
 	resCh := make(chan any)
 
 	go func() {
-		select {
-		case <-ctx.Done():
-			close(resCh)
-			return
-		}
+		_ = <-ctx.Done()
+		close(resCh)
 	}()
 
 	out := in
