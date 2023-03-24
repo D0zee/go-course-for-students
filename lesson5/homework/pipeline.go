@@ -2,6 +2,7 @@ package executor
 
 import (
 	"context"
+	"sync"
 )
 
 type (
@@ -13,10 +14,12 @@ type Stage func(in In) (out Out)
 
 func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
 	resCh := make(chan any)
+	done := sync.Once{}
+	closeCh := func() { close(resCh) }
 
 	go func() {
 		<-ctx.Done()
-		close(resCh)
+		done.Do(closeCh)
 	}()
 
 	out := in
@@ -25,7 +28,7 @@ func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
 	}
 
 	go func() {
-		defer close(resCh)
+		defer done.Do(closeCh)
 		for val := range out {
 			select {
 			case <-ctx.Done():
