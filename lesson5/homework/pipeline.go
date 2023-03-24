@@ -15,7 +15,7 @@ func ExecutePipeline(ctx context.Context, in In, stages ...Stage) Out {
 	resCh := make(chan any)
 
 	go func() {
-		_ = <-ctx.Done()
+		<-ctx.Done()
 		close(resCh)
 	}()
 
