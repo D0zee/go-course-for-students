@@ -32,8 +32,8 @@ type Field struct {
 	Value reflect.Value
 }
 
-func getValueOfTag(ft reflect.StructField, prefix string) (string, error) {
-	tagValue := ft.Tag.Get("validate")
+func getValueOfTag(f Field, prefix string) (string, error) {
+	tagValue := f.Type.Tag.Get("validate")
 	after := strings.TrimPrefix(tagValue, prefix)
 	if after == "" {
 		return "", ErrInvalidValidatorSyntax
@@ -41,8 +41,8 @@ func getValueOfTag(ft reflect.StructField, prefix string) (string, error) {
 	return after, nil
 }
 
-func validateLen(errs ValidationErrors, ft reflect.StructField, vt reflect.Value) ValidationErrors {
-	after, err := getValueOfTag(ft, "len:")
+func validateLen(errs ValidationErrors, f Field) ValidationErrors {
+	after, err := getValueOfTag(f, "len:")
 	if err != nil {
 		return append(errs, ValidationError{err})
 	}
@@ -51,7 +51,7 @@ func validateLen(errs ValidationErrors, ft reflect.StructField, vt reflect.Value
 	if err != nil {
 		return append(errs, ValidationError{ErrInvalidValidatorSyntax})
 	}
-	if l != len(vt.String()) {
+	if l != len(f.Value.String()) {
 		errs = append(errs, ValidationError{ErrValidatorLen})
 	}
 	return errs
@@ -78,21 +78,21 @@ func ConvertToInts(s []string) ([]int, error) {
 	return arr, nil
 }
 
-func validateIn(errs ValidationErrors, ft reflect.StructField, vt reflect.Value) ValidationErrors {
-	after, err := getValueOfTag(ft, "in:")
+func validateIn(errs ValidationErrors, f Field) ValidationErrors {
+	after, err := getValueOfTag(f, "in:")
 	if err != nil {
 		return append(errs, ValidationError{err})
 	}
 	patterns := strings.Split(after, ",")
 	contain := false
-	if vt.Kind() == reflect.Int {
+	if f.Value.Kind() == reflect.Int {
 		ints, err := ConvertToInts(patterns)
 		if err != nil {
 			return append(errs, ValidationError{err})
 		}
-		contain = Contains(ints, int(vt.Int()))
-	} else if vt.Kind() == reflect.String {
-		contain = Contains(patterns, vt.String())
+		contain = Contains(ints, int(f.Value.Int()))
+	} else if f.Value.Kind() == reflect.String {
+		contain = Contains(patterns, f.Value.String())
 	}
 	if !contain {
 		errs = append(errs, ValidationError{ErrValidatorIn})
@@ -109,8 +109,8 @@ func (p PredicateWithInfo) getValidationError() ValidationError {
 	return ValidationError{errors.New("field isn't validated by " + p.name + " function")}
 }
 
-func validateMinMax(errs ValidationErrors, ft reflect.StructField, vt reflect.Value, p PredicateWithInfo) ValidationErrors {
-	after, err := getValueOfTag(ft, p.name+":")
+func validateMinMax(errs ValidationErrors, f Field, p PredicateWithInfo) ValidationErrors {
+	after, err := getValueOfTag(f, p.name+":")
 	if err != nil {
 		return append(errs, ValidationError{err})
 	}
@@ -119,37 +119,37 @@ func validateMinMax(errs ValidationErrors, ft reflect.StructField, vt reflect.Va
 	if err != nil {
 		return append(errs, ValidationError{ErrInvalidValidatorSyntax})
 	}
-	if vt.Kind() == reflect.Int {
-		if !p.predicate(int(vt.Int()), bound) {
+	if f.Value.Kind() == reflect.Int {
+		if !p.predicate(int(f.Value.Int()), bound) {
 			return append(errs, p.getValidationError())
 		}
-	} else if vt.Kind() == reflect.String {
-		if !p.predicate(len(vt.String()), bound) {
+	} else if f.Value.Kind() == reflect.String {
+		if !p.predicate(len(f.Value.String()), bound) {
 			return append(errs, p.getValidationError())
 		}
 	}
 	return errs
 }
 
-func ValidateField(errs ValidationErrors, ft reflect.StructField, vt reflect.Value) ValidationErrors {
-	tv := ft.Tag.Get("validate")
+func ValidateField(errs ValidationErrors, f Field) ValidationErrors {
+	tv := f.Type.Tag.Get("validate")
 	if tv == "" {
 		return errs
 	}
 	if strings.HasPrefix(tv, "len:") {
-		errs = validateLen(errs, ft, vt)
+		errs = validateLen(errs, f)
 	}
 	if strings.HasPrefix(tv, "in:") {
-		errs = validateIn(errs, ft, vt)
+		errs = validateIn(errs, f)
 	}
 	if strings.HasPrefix(tv, "min:") {
-		errs = validateMinMax(errs, ft, vt,
+		errs = validateMinMax(errs, f,
 			PredicateWithInfo{name: "min", predicate: func(a int, b int) bool {
 				return a >= b
 			}})
 	}
 	if strings.HasPrefix(tv, "max:") {
-		errs = validateMinMax(errs, ft, vt,
+		errs = validateMinMax(errs, f,
 			PredicateWithInfo{name: "max", predicate: func(a int, b int) bool {
 				return a <= b
 			}})
@@ -157,9 +157,9 @@ func ValidateField(errs ValidationErrors, ft reflect.StructField, vt reflect.Val
 	return errs
 }
 
-func Validate(v any) error {
-	typeV := reflect.TypeOf(v)
-	valueV := reflect.ValueOf(v)
+func Validate(val any) error {
+	typeV := reflect.TypeOf(val)
+	valueV := reflect.ValueOf(val)
 	if typeV.Kind() != reflect.Struct {
 		return ErrNotStruct
 	}
@@ -177,7 +177,7 @@ func Validate(v any) error {
 			errs = append(errs, ValidationError{ErrValidateForUnexportedFields})
 			continue
 		}
-		errs = ValidateField(errs, ft, vt)
+		errs = ValidateField(errs, Field{Value: vt, Type: ft})
 	}
 	if len(errs) == 0 {
 		return nil
