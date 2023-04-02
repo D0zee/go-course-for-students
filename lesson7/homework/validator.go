@@ -1,6 +1,7 @@
 package homework
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"reflect"
 	"strconv"
@@ -23,17 +24,19 @@ func (v ValidationErrors) Error() string {
 	var s string
 	for _, err := range v {
 		s += err.Err.Error()
+
 	}
 	return s
 }
 
 type Field struct {
-	Type  reflect.StructField
-	Value reflect.Value
+	//Type  reflect.StructField
+	Value    reflect.Value
+	TagValue string
 }
 
 func getValueOfTag(f Field, prefix string) (string, error) {
-	tagValue := f.Type.Tag.Get("validate")
+	tagValue := f.TagValue
 	after := strings.TrimPrefix(tagValue, prefix)
 	if after == "" {
 		return "", ErrInvalidValidatorSyntax
@@ -42,6 +45,7 @@ func getValueOfTag(f Field, prefix string) (string, error) {
 }
 
 func validateLen(errs ValidationErrors, f Field) ValidationErrors {
+	fmt.Println(f.Value.String())
 	after, err := getValueOfTag(f, "len:")
 	if err != nil {
 		return append(errs, ValidationError{err})
@@ -132,7 +136,8 @@ func validateMinMax(errs ValidationErrors, f Field, p PredicateWithInfo) Validat
 }
 
 func ValidateField(errs ValidationErrors, f Field) ValidationErrors {
-	tv := f.Type.Tag.Get("validate")
+	tv := f.TagValue
+	fmt.Println("validate:" + tv)
 	if tv == "" {
 		return errs
 	}
@@ -168,7 +173,6 @@ func Validate(val any) error {
 	for i := 0; i < n; i++ {
 		ft := typeV.Field(i)
 		vt := valueV.Field(i)
-
 		tv := ft.Tag.Get("validate")
 		if tv == "" {
 			continue
@@ -177,7 +181,13 @@ func Validate(val any) error {
 			errs = append(errs, ValidationError{ErrValidateForUnexportedFields})
 			continue
 		}
-		errs = ValidateField(errs, Field{Value: vt, Type: ft})
+		if vt.Kind() == reflect.Slice {
+			for i := 0; i < vt.Len(); i++ {
+				errs = ValidateField(errs, Field{TagValue: tv, Value: vt.Index(i)})
+			}
+		}
+
+		errs = ValidateField(errs, Field{Value: vt, TagValue: tv})
 	}
 	if len(errs) == 0 {
 		return nil
