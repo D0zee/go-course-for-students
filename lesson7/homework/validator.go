@@ -52,7 +52,7 @@ func validateLen(errs ValidationErrors, f Field) ValidationErrors {
 	}
 
 	l, err := strconv.Atoi(after)
-	if err != nil {
+	if err != nil || l < 0 {
 		return append(errs, ValidationError{ErrInvalidValidatorSyntax})
 	}
 	if l != len(f.Value.String()) {
@@ -184,7 +184,12 @@ func Validate(val any) error {
 		if vt.Kind() == reflect.Slice {
 			for i := 0; i < vt.Len(); i++ {
 				errs = ValidateField(errs, Field{TagValue: tv, Value: vt.Index(i)})
+
+				if len(errs) != 0 && errs[len(errs)-1].Err == ErrInvalidValidatorSyntax { // if we get InvalidSyntax on first element, then no sense to continue iterate
+					break
+				}
 			}
+			continue
 		}
 
 		errs = ValidateField(errs, Field{Value: vt, TagValue: tv})
