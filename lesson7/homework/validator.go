@@ -10,6 +10,8 @@ import (
 var ErrNotStruct = errors.New("wrong argument given, should be a struct")
 var ErrInvalidValidatorSyntax = errors.New("invalid validator syntax")
 var ErrValidateForUnexportedFields = errors.New("validation for unexported field is not allowed")
+var ErrValidatorLen = errors.New("validator LEN: wrong length of string")
+var ErrValidatorIn = errors.New("validator IN: there isn't the value")
 
 type ValidationError struct {
 	Err error
@@ -25,15 +27,32 @@ func (v ValidationErrors) Error() string {
 	return s
 }
 
-func validateLen(errs ValidationErrors, ft reflect.StructField, vt reflect.Value) ValidationErrors {
+type Field struct {
+	Type  reflect.StructField
+	Value reflect.Value
+}
+
+func getValueOfTag(ft reflect.StructField, prefix string) (string, error) {
 	tagValue := ft.Tag.Get("validate")
-	after := strings.TrimPrefix(tagValue, "len:")
+	after := strings.TrimPrefix(tagValue, prefix)
+	if after == "" {
+		return "", ErrInvalidValidatorSyntax
+	}
+	return after, nil
+}
+
+func validateLen(errs ValidationErrors, ft reflect.StructField, vt reflect.Value) ValidationErrors {
+	after, err := getValueOfTag(ft, "len:")
+	if err != nil {
+		return append(errs, ValidationError{err})
+	}
+
 	l, err := strconv.Atoi(after)
 	if err != nil {
 		return append(errs, ValidationError{ErrInvalidValidatorSyntax})
 	}
 	if l != len(vt.String()) {
-		errs = append(errs, ValidationError{errors.New("wrong length")})
+		errs = append(errs, ValidationError{ErrValidatorLen})
 	}
 	return errs
 }
@@ -48,22 +67,21 @@ func Contains[T comparable](t []T, needle T) bool {
 }
 
 func ConvertToInts(s []string) ([]int, error) {
-	ints := make([]int, len(s))
+	arr := make([]int, len(s))
 	for idx, pattern := range s {
 		i, err := strconv.Atoi(pattern)
 		if err != nil {
 			return nil, ErrInvalidValidatorSyntax
 		}
-		ints[idx] = i
+		arr[idx] = i
 	}
-	return ints, nil
+	return arr, nil
 }
 
 func validateIn(errs ValidationErrors, ft reflect.StructField, vt reflect.Value) ValidationErrors {
-	tagValue := ft.Tag.Get("validate")
-	after := strings.TrimPrefix(tagValue, "in:")
-	if after == "" {
-		return append(errs, ValidationError{ErrInvalidValidatorSyntax})
+	after, err := getValueOfTag(ft, "in:")
+	if err != nil {
+		return append(errs, ValidationError{err})
 	}
 	patterns := strings.Split(after, ",")
 	contain := false
@@ -77,51 +95,64 @@ func validateIn(errs ValidationErrors, ft reflect.StructField, vt reflect.Value)
 		contain = Contains(patterns, vt.String())
 	}
 	if !contain {
-		errs = append(errs, ValidationError{errors.New("don't contain")})
+		errs = append(errs, ValidationError{ErrValidatorIn})
 	}
 	return errs
 }
 
-func validateMin(errs ValidationErrors, ft reflect.StructField, vt reflect.Value) ValidationErrors {
-	tagValue := ft.Tag.Get("validate")
-	after := strings.TrimPrefix(tagValue, "min:")
-	if after == "" {
-		return append(errs, ValidationError{ErrInvalidValidatorSyntax})
+type PredicateWithInfo struct {
+	name      string
+	predicate func(int, int) bool
+}
+
+func (p PredicateWithInfo) getValidationError() ValidationError {
+	return ValidationError{errors.New("field isn't validated by " + p.name + " function")}
+}
+
+func validateMinMax(errs ValidationErrors, ft reflect.StructField, vt reflect.Value, p PredicateWithInfo) ValidationErrors {
+	after, err := getValueOfTag(ft, p.name+":")
+	if err != nil {
+		return append(errs, ValidationError{err})
 	}
-	min, err := strconv.Atoi(after)
+
+	bound, err := strconv.Atoi(after)
 	if err != nil {
 		return append(errs, ValidationError{ErrInvalidValidatorSyntax})
 	}
 	if vt.Kind() == reflect.Int {
-		if int(vt.Int()) < min {
-			return append(errs, ValidationError{errors.New("min isn't correct")})
+		if !p.predicate(int(vt.Int()), bound) {
+			return append(errs, p.getValidationError())
 		}
 	} else if vt.Kind() == reflect.String {
-		if len(vt.String()) < min {
-			return append(errs, ValidationError{errors.New("min isn't correct")})
+		if !p.predicate(len(vt.String()), bound) {
+			return append(errs, p.getValidationError())
 		}
 	}
 	return errs
 }
 
-func validateMax(errs ValidationErrors, ft reflect.StructField, vt reflect.Value) ValidationErrors {
-	tagValue := ft.Tag.Get("validate")
-	after := strings.TrimPrefix(tagValue, "max:")
-	if after == "" {
-		return append(errs, ValidationError{ErrInvalidValidatorSyntax})
+func ValidateField(errs ValidationErrors, ft reflect.StructField, vt reflect.Value) ValidationErrors {
+	tv := ft.Tag.Get("validate")
+	if tv == "" {
+		return errs
 	}
-	max, err := strconv.Atoi(after)
-	if err != nil {
-		return append(errs, ValidationError{ErrInvalidValidatorSyntax})
+	if strings.HasPrefix(tv, "len:") {
+		errs = validateLen(errs, ft, vt)
 	}
-	if vt.Kind() == reflect.Int {
-		if int(vt.Int()) > max {
-			return append(errs, ValidationError{errors.New("min isn't correct")})
-		}
-	} else if vt.Kind() == reflect.String {
-		if len(vt.String()) > max {
-			return append(errs, ValidationError{errors.New("min isn't correct")})
-		}
+	if strings.HasPrefix(tv, "in:") {
+		errs = validateIn(errs, ft, vt)
+	}
+	if strings.HasPrefix(tv, "min:") {
+		errs = validateMinMax(errs, ft, vt,
+			PredicateWithInfo{name: "min", predicate: func(a int, b int) bool {
+				return a >= b
+			}})
+	}
+	if strings.HasPrefix(tv, "max:") {
+		errs = validateMinMax(errs, ft, vt,
+			PredicateWithInfo{name: "max", predicate: func(a int, b int) bool {
+				return a <= b
+			}})
 	}
 	return errs
 }
@@ -146,18 +177,7 @@ func Validate(v any) error {
 			errs = append(errs, ValidationError{ErrValidateForUnexportedFields})
 			continue
 		}
-		if strings.HasPrefix(tv, "len:") {
-			errs = validateLen(errs, ft, vt)
-		}
-		if strings.HasPrefix(tv, "in:") {
-			errs = validateIn(errs, ft, vt)
-		}
-		if strings.HasPrefix(tv, "min:") {
-			errs = validateMin(errs, ft, vt)
-		}
-		if strings.HasPrefix(tv, "max:") {
-			errs = validateMax(errs, ft, vt)
-		}
+		errs = ValidateField(errs, ft, vt)
 	}
 	if len(errs) == 0 {
 		return nil
