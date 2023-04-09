@@ -26,10 +26,8 @@ func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) 
 		return nil, ErrInternal
 	default:
 	}
-	ad := ads.Ad{Title: title, Text: text, AuthorID: userId}
-	fmt.Println(title)
-	fmt.Println(text)
-	err := a.Repo.Insert(&ad, userId)
+	ad := ads.Ad{ID: a.Repo.GetNewId(), Title: title, Text: text, AuthorID: userId}
+	err := a.Repo.Insert(ad)
 	if err != nil {
 		return nil, err
 	}
@@ -44,10 +42,15 @@ func (a *AdApp) ChangeAdStatus(ctx context.Context, adId, userId int64, publishe
 	}
 	ad, err := a.Repo.Get(adId, userId)
 	if err != nil {
+		fmt.Println("ABJKLAB")
 		return nil, err
 	}
 	ad.Published = published
-	return ad, nil
+	err = a.Repo.ReplaceById(ad, ad.ID, userId)
+	if err != nil {
+		return nil, err
+	}
+	return &ad, nil
 }
 
 func (a *AdApp) UpdateAd(ctx context.Context, adId, userId int64, title, text string) (*ads.Ad, error) {
@@ -62,7 +65,11 @@ func (a *AdApp) UpdateAd(ctx context.Context, adId, userId int64, title, text st
 	}
 	ad.Title = title
 	ad.Text = text
-	return ad, nil
+	err = a.Repo.ReplaceById(ad, ad.ID, userId)
+	if err != nil {
+		return nil, err
+	}
+	return &ad, nil
 }
 
 func NewApp(repo adrepo.Repository) App {

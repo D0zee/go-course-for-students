@@ -2,6 +2,7 @@ package httpfiber
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"homework6/internal/adapters/adrepo"
 	"net/http"
@@ -78,10 +79,17 @@ func updateAd(a app.App) fiber.Handler {
 		}
 
 		ad, err := a.UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
+		if err != nil {
+			if errors.Is(err, adrepo.ErrValidate) {
+				fmt.Println(err.Error())
+				c.Status(http.StatusBadRequest)
+				return c.JSON(AdErrorResponse(err))
+			}
 
-		if errors.As(err, &adrepo.ErrAccess) {
-			c.Status(http.StatusForbidden)
-			return c.JSON(AdErrorResponse(err))
+			if errors.Is(err, adrepo.ErrAccess) {
+				c.Status(http.StatusForbidden)
+				return c.JSON(AdErrorResponse(err))
+			}
 		}
 
 		if err != nil {
