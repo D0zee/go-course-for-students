@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
-	"homework6/internal/adapters/adrepo"
 	"net/http"
 
 	"homework6/internal/app"
@@ -21,7 +20,7 @@ func createAd(a app.App) fiber.Handler {
 		}
 
 		ad, err := a.CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
-		if errors.Is(err, adrepo.ErrValidate) {
+		if errors.Is(err, app.ErrValidate) {
 			c.Status(http.StatusBadRequest)
 			return c.JSON(AdErrorResponse(err))
 		}
@@ -49,7 +48,7 @@ func changeAdStatus(a app.App) fiber.Handler {
 		}
 
 		ad, err := a.ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
-		if errors.Is(err, adrepo.ErrAccess) {
+		if errors.Is(err, app.ErrAccess) {
 			c.Status(http.StatusForbidden)
 			return c.JSON(AdErrorResponse(err))
 		}
@@ -80,13 +79,13 @@ func updateAd(a app.App) fiber.Handler {
 
 		ad, err := a.UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
 		if err != nil {
-			if errors.Is(err, adrepo.ErrValidate) {
+			if errors.Is(err, app.ErrValidate) {
 				fmt.Println(err.Error())
 				c.Status(http.StatusBadRequest)
 				return c.JSON(AdErrorResponse(err))
 			}
 
-			if errors.Is(err, adrepo.ErrAccess) {
+			if errors.Is(err, app.ErrAccess) {
 				c.Status(http.StatusForbidden)
 				return c.JSON(AdErrorResponse(err))
 			}

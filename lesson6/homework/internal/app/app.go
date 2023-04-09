@@ -3,12 +3,14 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
+	"github.com/D0zee/advalidator"
 	"homework6/internal/adapters/adrepo"
 	"homework6/internal/ads"
 )
 
 var ErrInternal = errors.New("internal error")
+var ErrAccess = errors.New("forbidden")
+var ErrValidate = errors.New("not validated")
 
 type App interface {
 	CreateAd(ctx context.Context, title, text string, userId int64) (*ads.Ad, error)
@@ -27,10 +29,10 @@ func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) 
 	default:
 	}
 	ad := ads.Ad{ID: a.Repo.GetNewId(), Title: title, Text: text, AuthorID: userId}
-	err := a.Repo.Insert(ad)
-	if err != nil {
-		return nil, err
+	if err := advalidator.Validate(ad); err != nil {
+		return nil, ErrValidate
 	}
+	a.Repo.Insert(ad)
 	return &ad, nil
 }
 
@@ -40,16 +42,12 @@ func (a *AdApp) ChangeAdStatus(ctx context.Context, adId, userId int64, publishe
 		return nil, ErrInternal
 	default:
 	}
-	ad, err := a.Repo.Get(adId, userId)
-	if err != nil {
-		fmt.Println("ABJKLAB")
-		return nil, err
+	if !a.Repo.CheckAccess(adId, userId) {
+		return nil, ErrAccess
 	}
+	ad := a.Repo.Get(adId, userId)
 	ad.Published = published
-	err = a.Repo.ReplaceById(ad, ad.ID, userId)
-	if err != nil {
-		return nil, err
-	}
+	a.Repo.ReplaceById(ad, ad.ID, userId)
 	return &ad, nil
 }
 
@@ -59,16 +57,16 @@ func (a *AdApp) UpdateAd(ctx context.Context, adId, userId int64, title, text st
 		return nil, ErrInternal
 	default:
 	}
-	ad, err := a.Repo.Get(adId, userId)
-	if err != nil {
-		return nil, err
+	if !a.Repo.CheckAccess(adId, userId) {
+		return nil, ErrAccess
 	}
+	ad := a.Repo.Get(adId, userId)
 	ad.Title = title
 	ad.Text = text
-	err = a.Repo.ReplaceById(ad, ad.ID, userId)
-	if err != nil {
-		return nil, err
+	if err := advalidator.Validate(ad); err != nil {
+		return nil, ErrValidate
 	}
+	a.Repo.ReplaceById(ad, ad.ID, userId)
 	return &ad, nil
 }
 
