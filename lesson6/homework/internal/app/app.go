@@ -2,27 +2,41 @@ package app
 
 import (
 	"context"
+	"errors"
+	"homework6/internal/adapters/adrepo"
 	"homework6/internal/ads"
 )
 
+var ErrInternal = errors.New("internal error")
+
 type App interface {
-	CreateAd(ctx *context.Context, title, text string, userId int64) *ads.Ad
-	ChangeAdStatus(ctx *context.Context, adId, userId int64, published bool) (*ads.Ad, error)
-	UpdateAd(ctx *context.Context, adId, userId int64, title, text string) (*ads.Ad, error)
+	CreateAd(ctx context.Context, title, text string, userId int64) (*ads.Ad, error)
+	ChangeAdStatus(ctx context.Context, adId, userId int64, published bool) (*ads.Ad, error)
+	UpdateAd(ctx context.Context, adId, userId int64, title, text string) (*ads.Ad, error)
 }
 
-type MyApp struct {
-	repo Repository
+type AdApp struct {
+	Repo adrepo.Repository
 }
 
-func (app *MyApp) CreateAd(ctx *context.Context, title, text string, userId int64) *ads.Ad {
-	ad := ads.Ad{Title: title, Text: text, AuthorID: userId, Published: false}
-	app.repo.Insert(&ad, userId)
-	return &ad
+func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) (*ads.Ad, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ErrInternal
+	default:
+	}
+	ad := ads.Ad{Title: title, Text: text, AuthorID: userId}
+	a.Repo.Insert(&ad, userId)
+	return &ad, nil
 }
 
-func (app *MyApp) ChangeAdStatus(ctx *context.Context, adId, userId int64, published bool) (*ads.Ad, error) {
-	ad, err := app.repo.Get(adId, userId)
+func (a *AdApp) ChangeAdStatus(ctx context.Context, adId, userId int64, published bool) (*ads.Ad, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ErrInternal
+	default:
+	}
+	ad, err := a.Repo.Get(adId, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +44,13 @@ func (app *MyApp) ChangeAdStatus(ctx *context.Context, adId, userId int64, publi
 	return ad, nil
 }
 
-func (app *MyApp) UpdateAd(ctx *context.Context, adId, userId int64, title, text string) (*ads.Ad, error) {
-	ad, err := app.repo.Get(adId, userId)
+func (a *AdApp) UpdateAd(ctx context.Context, adId, userId int64, title, text string) (*ads.Ad, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ErrInternal
+	default:
+	}
+	ad, err := a.Repo.Get(adId, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -40,13 +59,6 @@ func (app *MyApp) UpdateAd(ctx *context.Context, adId, userId int64, title, text
 	return ad, nil
 }
 
-type Repository interface {
-	Insert(ad *ads.Ad, userId int64)
-	Get(adId, userId int64) (*ads.Ad, error)
-	GetNewId() int64
-	Remove(id int64)
-}
-
-func NewApp(repo Repository) App {
-	return &MyApp{repo}
+func NewApp(repo adrepo.Repository) App {
+	return &AdApp{Repo: repo}
 }

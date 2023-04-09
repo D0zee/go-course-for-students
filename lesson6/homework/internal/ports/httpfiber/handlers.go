@@ -1,7 +1,6 @@
 package httpfiber
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,11 +18,9 @@ func createAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		//TODO: вызов логики, например, CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
-		var ctx context.Context = c.Context()
-		ad := a.CreateAd(&ctx, reqBody.Title, reqBody.Text, reqBody.UserID)
+		ad, err := a.CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
 		// TODO: to think about error
+		//if (errors.As(err, app.Error))
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
@@ -50,10 +47,7 @@ func changeAdStatus(a app.App) fiber.Handler {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
-		// TODO: вызов логики ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
-		var ctx context.Context = c.Context() // TODO: check why pointer != context.Context
-		ad, err := a.ChangeAdStatus(&ctx, int64(adID), reqBody.UserID, reqBody.Published)
+		ad, err := a.ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
 		if err != nil {
 			c.Status(http.StatusForbidden)
 			return c.JSON(AdErrorResponse(err))
@@ -81,10 +75,7 @@ func updateAd(a app.App) fiber.Handler {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
-		// TODO: вызов логики, например, UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
-		var ctx context.Context = c.Context() // TODO: check why pointer != context.Context
-		ad, err := a.UpdateAd(&ctx, int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
+		ad, err := a.UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
 
 		if err != nil {
 			c.Status(http.StatusForbidden)
