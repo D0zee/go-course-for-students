@@ -1,9 +1,10 @@
 package httpfiber
 
 import (
-	"net/http"
-
+	"errors"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"net/http"
 
 	"homework6/internal/app"
 )
@@ -18,14 +19,16 @@ func createAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		//TODO: вызов логики, например, CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
-
+		ad, err := a.CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
+		if errors.Is(err, app.ErrValidate) {
+			c.Status(http.StatusBadRequest)
+			return c.JSON(AdErrorResponse(err))
+		}
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(ad))
 	}
 }
 
@@ -44,15 +47,18 @@ func changeAdStatus(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		// TODO: вызов логики ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
+		ad, err := a.ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
+		if errors.Is(err, app.ErrAccess) {
+			c.Status(http.StatusForbidden)
+			return c.JSON(AdErrorResponse(err))
+		}
 
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(ad))
 	}
 }
 
@@ -71,14 +77,23 @@ func updateAd(a app.App) fiber.Handler {
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		// TODO: вызов логики, например, UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
-		// TODO: метод должен возвращать AdSuccessResponse или ошибку.
-
+		ad, err := a.UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
 		if err != nil {
+			if errors.Is(err, app.ErrValidate) {
+				fmt.Println(err.Error())
+				c.Status(http.StatusBadRequest)
+				return c.JSON(AdErrorResponse(err))
+			}
+
+			if errors.Is(err, app.ErrAccess) {
+				c.Status(http.StatusForbidden)
+				return c.JSON(AdErrorResponse(err))
+			}
+
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
 
-		return c.JSON(AdSuccessResponse( /* объект ad */ ))
+		return c.JSON(AdSuccessResponse(ad))
 	}
 }
