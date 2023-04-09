@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"homework6/internal/adapters/adrepo"
 	"homework6/internal/ads"
 )
@@ -26,7 +27,12 @@ func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) 
 	default:
 	}
 	ad := ads.Ad{Title: title, Text: text, AuthorID: userId}
-	a.Repo.Insert(&ad, userId)
+	fmt.Println(title)
+	fmt.Println(text)
+	err := a.Repo.Insert(&ad, userId)
+	if err != nil {
+		return nil, err
+	}
 	return &ad, nil
 }
 

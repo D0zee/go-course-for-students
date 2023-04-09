@@ -20,6 +20,10 @@ func createAd(a app.App) fiber.Handler {
 		}
 
 		ad, err := a.CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
+		if errors.As(err, &adrepo.ErrValidate) {
+			c.Status(http.StatusBadRequest)
+			return c.JSON(AdErrorResponse(err))
+		}
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
