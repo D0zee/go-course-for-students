@@ -2,10 +2,9 @@ package httpfiber
 
 import (
 	"errors"
+	"github.com/gofiber/fiber/v2"
 	"homework6/internal/adapters/adrepo"
 	"net/http"
-
-	"github.com/gofiber/fiber/v2"
 
 	"homework6/internal/app"
 )
