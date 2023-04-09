@@ -21,7 +21,7 @@ func createAd(a app.App) fiber.Handler {
 		}
 
 		ad, err := a.CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
-		if errors.As(err, &adrepo.ErrValidate) {
+		if errors.Is(err, adrepo.ErrValidate) {
 			c.Status(http.StatusBadRequest)
 			return c.JSON(AdErrorResponse(err))
 		}
@@ -49,7 +49,7 @@ func changeAdStatus(a app.App) fiber.Handler {
 		}
 
 		ad, err := a.ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
-		if errors.As(err, &adrepo.ErrAccess) {
+		if errors.Is(err, adrepo.ErrAccess) {
 			c.Status(http.StatusForbidden)
 			return c.JSON(AdErrorResponse(err))
 		}
