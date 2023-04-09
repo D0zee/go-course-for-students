@@ -90,9 +90,7 @@ func updateAd(a app.App) fiber.Handler {
 				c.Status(http.StatusForbidden)
 				return c.JSON(AdErrorResponse(err))
 			}
-		}
 
-		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
