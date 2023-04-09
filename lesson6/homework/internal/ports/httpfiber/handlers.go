@@ -1,6 +1,8 @@
 package httpfiber
 
 import (
+	"errors"
+	"homework6/internal/adapters/adrepo"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,8 +21,6 @@ func createAd(a app.App) fiber.Handler {
 		}
 
 		ad, err := a.CreateAd(c.Context(), reqBody.Title, reqBody.Text, reqBody.UserID)
-		// TODO: to think about error
-		//if (errors.As(err, app.Error))
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
@@ -43,13 +43,15 @@ func changeAdStatus(a app.App) fiber.Handler {
 			c.Status(http.StatusBadRequest)
 			return c.JSON(AdErrorResponse(err))
 		}
-		if err != nil {
-			c.Status(http.StatusInternalServerError)
+
+		ad, err := a.ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
+		if errors.As(err, &adrepo.ErrAccess) {
+			c.Status(http.StatusForbidden)
 			return c.JSON(AdErrorResponse(err))
 		}
-		ad, err := a.ChangeAdStatus(c.Context(), int64(adID), reqBody.UserID, reqBody.Published)
+
 		if err != nil {
-			c.Status(http.StatusForbidden)
+			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
 
@@ -71,14 +73,16 @@ func updateAd(a app.App) fiber.Handler {
 			c.Status(http.StatusBadRequest)
 			return c.JSON(AdErrorResponse(err))
 		}
-		if err != nil {
-			c.Status(http.StatusInternalServerError)
-			return c.JSON(AdErrorResponse(err))
-		}
+
 		ad, err := a.UpdateAd(c.Context(), int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
 
-		if err != nil {
+		if errors.As(err, &adrepo.ErrAccess) {
 			c.Status(http.StatusForbidden)
+			return c.JSON(AdErrorResponse(err))
+		}
+
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
 			return c.JSON(AdErrorResponse(err))
 		}
 
