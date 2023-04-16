@@ -11,5 +11,7 @@ func AppRouter(r *gin.RouterGroup, a app.App) {
 	//s.app.GET("/api/v1/ads", showListAds(a))
 	r.PUT("/ads/:id/status", changeAdStatus(a))
 	r.PUT("/ads/:id", updateAd(a))
-
+	r.POST("/users", CreateUser(a))
+	r.PUT("/users/:id/nickname", ChangeUser(a))
+	r.PUT("/users/:id/email", ChangeUser(a))
 }

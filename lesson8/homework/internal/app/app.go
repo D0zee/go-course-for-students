@@ -5,21 +5,29 @@ import (
 	"errors"
 	"github.com/D0zee/advalidator"
 	"homework8/internal/adapters/adrepo"
+	"homework8/internal/adapters/userrepo"
 	"homework8/internal/ads"
+	"homework8/internal/users"
 )
 
 var ErrInternal = errors.New("internal error")
 var ErrAccess = errors.New("forbidden")
 var ErrValidate = errors.New("not validated")
+var ErrWrongUserId = errors.New("not contain user with this id")
 
 type App interface {
 	CreateAd(ctx context.Context, title, text string, userId int64) (*ads.Ad, error)
 	ChangeAdStatus(ctx context.Context, adId, userId int64, published bool) (*ads.Ad, error)
 	UpdateAd(ctx context.Context, adId, userId int64, title, text string) (*ads.Ad, error)
+
+	CreateUser(ctx context.Context, nickname, email string) (users.User, error)
+	UpdateNickname(ctx context.Context, userId int64, nickname string) (users.User, error)
+	UpdateEmail(ctx context.Context, userId int64, email string) (users.User, error)
 }
 
 type AdApp struct {
-	Repo adrepo.Repository
+	Repo     adrepo.Repository
+	UserRepo userrepo.Repository
 }
 
 func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) (*ads.Ad, error) {
@@ -70,6 +78,47 @@ func (a *AdApp) UpdateAd(ctx context.Context, adId, userId int64, title, text st
 	return &ad, nil
 }
 
-func NewApp(repo adrepo.Repository) App {
-	return &AdApp{Repo: repo}
+func (a *AdApp) CreateUser(ctx context.Context, nickname, email string) (users.User, error) {
+	select {
+	case <-ctx.Done():
+		return users.User{}, ErrInternal
+	default:
+	}
+	userId := a.UserRepo.GetCurrentId()
+	user := users.New(userId, nickname, email)
+	// todo: validation of fields
+	a.UserRepo.Insert(user)
+	return *user, nil
+}
+
+func (a *AdApp) UpdateNickname(ctx context.Context, userId int64, nickname string) (users.User, error) {
+	select {
+	case <-ctx.Done():
+		return users.User{}, ErrInternal
+	default:
+	}
+	if !a.UserRepo.ContainsUserWithId(userId) {
+		return users.User{}, ErrWrongUserId
+	}
+	user := a.UserRepo.GetById(userId)
+	user.Nickname = nickname
+	return *user, nil
+}
+
+func (a *AdApp) UpdateEmail(ctx context.Context, userId int64, email string) (users.User, error) {
+	select {
+	case <-ctx.Done():
+		return users.User{}, ErrInternal
+	default:
+	}
+	if !a.UserRepo.ContainsUserWithId(userId) {
+		return users.User{}, errors.New("not contain user with this id")
+	}
+	user := a.UserRepo.GetById(userId)
+	user.Email = email
+	return *user, nil
+}
+
+func NewApp(repo adrepo.Repository, userRepo userrepo.Repository) App {
+	return &AdApp{Repo: repo, UserRepo: userRepo}
 }

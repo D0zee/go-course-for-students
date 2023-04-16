@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"homework8/internal/adapters/userrepo"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 
@@ -40,7 +42,7 @@ type testClient struct {
 }
 
 func getTestClient() *testClient {
-	server := httpgin.NewHTTPServer(":18080", app.NewApp(adrepo.New()))
+	server := httpgin.NewHTTPServer(":18080", app.NewApp(adrepo.New(), userrepo.New()))
 	testServer := httptest.NewServer(server.Handler())
 
 	return &testClient{
@@ -102,7 +104,7 @@ func (tc *testClient) createAd(userID int64, title string, text string) (adRespo
 	if err != nil {
 		return adResponse{}, err
 	}
-
+	log.Println("LOG:", response)
 	return response, nil
 }
 
