@@ -23,8 +23,7 @@ type App interface {
 	Access(adId, userId int64) error
 
 	CreateUser(ctx context.Context, nickname, email string) (users.User, error)
-	//UpdateNickname(ctx context.Context, userId int64, nickname string) (users.User, error)
-	//UpdateEmail(ctx context.Context, userId int64, email string) (users.User, error)
+	UpdateUser(ctx context.Context, userId int64, nickname string, m Method) (users.User, error)
 }
 
 type AdApp struct {
@@ -128,33 +127,32 @@ func (a *AdApp) CreateUser(ctx context.Context, nickname, email string) (users.U
 	return *user, nil
 }
 
-//func (a *AdApp) UpdateNickname(ctx context.Context, userId int64, nickname string) (users.User, error) {
-//	select {
-//	case <-ctx.Done():
-//		return users.User{}, ErrInternal
-//	default:
-//	}
-//	if !a.Repo.ContainsUserWithId(userId) {
-//		return users.User{}, ErrWrongUserId
-//	}
-//	user := a.Repo.GetUserById(userId)
-//	user.Nickname = nickname
-//	return *user, nil
-//}
-//
-//func (a *AdApp) UpdateEmail(ctx context.Context, userId int64, email string) (users.User, error) {
-//	select {
-//	case <-ctx.Done():
-//		return users.User{}, ErrInternal
-//	default:
-//	}
-//	if !a.Repo.ContainsUserWithId(userId) {
-//		return users.User{}, errors.New("not contain user with this id")
-//	}
-//	user := a.Repo.GetUserById(userId)
-//	user.Email = email
-//	return *user, nil
-//}
+type Method int64
+
+const (
+	ChangeEmail Method = iota
+	ChangeNickname
+)
+
+func (a *AdApp) UpdateUser(ctx context.Context, userId int64, data string, m Method) (users.User, error) {
+	select {
+	case <-ctx.Done():
+		return users.User{}, ErrInternal
+	default:
+	}
+	user, contain := a.UserRepo.Get(userId)
+	if !contain {
+		return users.User{}, ErrWrongUserId
+	}
+	if m == ChangeEmail {
+		user.Email = data
+	} else if m == ChangeNickname {
+		user.Nickname = data
+	} else {
+		panic(m)
+	}
+	return *user, nil
+}
 
 func NewApp(repo adrepo.Repository[ads.Ad], urepo adrepo.Repository[users.User]) App {
 	return &AdApp{Repo: repo, UserRepo: urepo}
