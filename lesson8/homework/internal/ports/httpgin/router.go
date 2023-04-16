@@ -6,12 +6,17 @@ import (
 	"homework8/internal/app"
 )
 
-func AppRouter(r *gin.RouterGroup, a app.App) {
-	r.POST("/ads", createAd(a))
-	//s.app.GET("/api/v1/ads", showListAds(a))
-	r.PUT("/ads/:id/status", changeAdStatus(a))
-	r.PUT("/ads/:id", updateAd(a))
-	r.POST("/users", CreateUser(a))
-	r.PUT("/users/:id/nickname", ChangeUser(a, method(changeNickname)))
-	r.PUT("/users/:id/email", ChangeUser(a, method(changeEmail)))
+func adRouter(r *gin.RouterGroup, a app.App) {
+	r.POST("/", createAd(a))
+	r.PUT("/:id/status", changeAdStatus(a))
+	r.PUT("/:id", updateAd(a))
+
+	//r.GET()
+
+}
+
+func userRouter(r *gin.RouterGroup, a app.App) {
+	r.POST("/", CreateUser(a))
+	r.PUT("/:id/nickname", ChangeUser(a, changeNickname))
+	r.PUT("/:id/email", ChangeUser(a, changeEmail))
 }
