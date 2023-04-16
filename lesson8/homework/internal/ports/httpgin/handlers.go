@@ -3,6 +3,7 @@ package httpgin
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"homework8/internal/users"
 	"log"
 	"net/http"
 	"strconv"
@@ -134,7 +135,14 @@ func CreateUser(a app.App) gin.HandlerFunc {
 	}
 }
 
-func ChangeUser(a app.App) gin.HandlerFunc {
+type method int64
+
+const (
+	changeEmail method = iota
+	changeNickname
+)
+
+func ChangeUser(a app.App, m method) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req changeUserRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -146,14 +154,20 @@ func ChangeUser(a app.App) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, ErrorResponse(ErrEmptyQueryParam))
 			return
 		}
-
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
 		}
 
-		user, err := a.UpdateNickname(c, int64(id), req.Data)
+		var user users.User
+		switch m {
+		case changeNickname:
+			user, err = a.UpdateNickname(c, int64(id), req.Data)
+		case changeEmail:
+			user, err = a.UpdateEmail(c, int64(id), req.Data)
+		}
+
 		if err != nil {
 			if errors.Is(err, app.ErrWrongUserId) {
 				c.JSON(http.StatusBadRequest, ErrorResponse(err))

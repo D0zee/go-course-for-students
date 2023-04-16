@@ -12,6 +12,6 @@ func AppRouter(r *gin.RouterGroup, a app.App) {
 	r.PUT("/ads/:id/status", changeAdStatus(a))
 	r.PUT("/ads/:id", updateAd(a))
 	r.POST("/users", CreateUser(a))
-	r.PUT("/users/:id/nickname", ChangeUser(a))
-	r.PUT("/users/:id/email", ChangeUser(a))
+	r.PUT("/users/:id/nickname", ChangeUser(a, method(changeNickname)))
+	r.PUT("/users/:id/email", ChangeUser(a, method(changeEmail)))
 }
