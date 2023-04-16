@@ -31,6 +31,10 @@ type updateAdRequest struct {
 	UserID int64  `json:"user_id"`
 }
 
+type getAdRequest struct {
+	UserID int64 `json:"user_id"`
+}
+
 type createUserRequest struct {
 	Nickname string `json:"nickname"`
 	Email    string `json:"email"`

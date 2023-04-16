@@ -49,14 +49,17 @@ func changeAdStatus(a app.App) gin.HandlerFunc {
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
-			//log.Fatal(err)
+		}
+
+		if c.Param("id") == "" {
+			c.JSON(http.StatusBadRequest, ErrorResponse(ErrEmptyQueryParam))
+			return
 		}
 
 		adID, err := strconv.Atoi(c.Param("id"))
-		if c.Param("id") == "" || err != nil {
+		if err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse(err))
 			return
-			//log.Fatal(err)
 		}
 
 		ad, err := a.ChangeAdStatus(c, int64(adID), reqBody.UserID, reqBody.Published)
@@ -64,13 +67,11 @@ func changeAdStatus(a app.App) gin.HandlerFunc {
 		if errors.Is(err, app.ErrAccess) {
 			c.JSON(http.StatusForbidden, ErrorResponse(err))
 			return
-			//log.Fatal(err)
 		}
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
 			return
-			//log.Fatal(err)
 		}
 
 		c.JSON(http.StatusOK, AdSuccessResponse(ad))
@@ -117,6 +118,44 @@ func updateAd(a app.App) gin.HandlerFunc {
 	}
 }
 
+func getAd(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Param("id") == "" {
+			c.JSON(http.StatusBadRequest, ErrorResponse(ErrEmptyQueryParam))
+			return
+		}
+
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		var req getAdRequest
+		if err = c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		ad, err := a.GetAdById(c, int64(id), req.UserID)
+		if err != nil {
+			if errors.Is(err, app.ErrAccess) {
+				c.JSON(http.StatusForbidden, ErrorResponse(err))
+				return
+			}
+			if errors.Is(err, app.ErrAvailabilityAd) {
+				c.JSON(http.StatusForbidden, ErrorResponse(err))
+				return
+			}
+			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, AdSuccessResponse(&ad))
+	}
+}
+
+// CreateUser - Method for creating user
 func CreateUser(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req createUserRequest
@@ -142,6 +181,7 @@ const (
 	changeNickname
 )
 
+// ChangeUser - Method for changing different fields of user structure
 func ChangeUser(a app.App, m method) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req changeUserRequest

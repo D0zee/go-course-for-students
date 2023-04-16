@@ -14,11 +14,13 @@ var ErrInternal = errors.New("internal error")
 var ErrAccess = errors.New("forbidden")
 var ErrValidate = errors.New("not validated")
 var ErrWrongUserId = errors.New("not contain user with this id")
+var ErrAvailabilityAd = errors.New("ad with this id is not created")
 
 type App interface {
 	CreateAd(ctx context.Context, title, text string, userId int64) (*ads.Ad, error)
 	ChangeAdStatus(ctx context.Context, adId, userId int64, published bool) (*ads.Ad, error)
 	UpdateAd(ctx context.Context, adId, userId int64, title, text string) (*ads.Ad, error)
+	GetAdById(ctx context.Context, adId, userId int64) (ads.Ad, error)
 
 	CreateUser(ctx context.Context, nickname, email string) (users.User, error)
 	UpdateNickname(ctx context.Context, userId int64, nickname string) (users.User, error)
@@ -36,7 +38,7 @@ func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) 
 		return nil, ErrInternal
 	default:
 	}
-	ad := ads.Ad{ID: a.Repo.GetNewId(), Title: title, Text: text, AuthorID: userId}
+	ad := ads.Ad{ID: a.Repo.GetCurAvailableId(), Title: title, Text: text, AuthorID: userId}
 	if err := advalidator.Validate(ad); err != nil {
 		return nil, ErrValidate
 	}
@@ -53,7 +55,7 @@ func (a *AdApp) ChangeAdStatus(ctx context.Context, adId, userId int64, publishe
 	if !a.Repo.CheckAccess(adId, userId) {
 		return nil, ErrAccess
 	}
-	ad := a.Repo.Get(adId, userId)
+	ad := a.Repo.Get(adId)
 	ad.Published = published
 	a.Repo.ReplaceById(ad, ad.ID, userId)
 	return &ad, nil
@@ -68,7 +70,7 @@ func (a *AdApp) UpdateAd(ctx context.Context, adId, userId int64, title, text st
 	if !a.Repo.CheckAccess(adId, userId) {
 		return nil, ErrAccess
 	}
-	ad := a.Repo.Get(adId, userId)
+	ad := a.Repo.Get(adId)
 	ad.Title = title
 	ad.Text = text
 	if err := advalidator.Validate(ad); err != nil {
@@ -76,6 +78,22 @@ func (a *AdApp) UpdateAd(ctx context.Context, adId, userId int64, title, text st
 	}
 	a.Repo.ReplaceById(ad, ad.ID, userId)
 	return &ad, nil
+}
+
+func (a *AdApp) GetAdById(ctx context.Context, adId, userId int64) (ads.Ad, error) {
+	select {
+	case <-ctx.Done():
+		return ads.Ad{}, ErrInternal
+	default:
+	}
+	if !a.Repo.CheckAccess(adId, userId) {
+		return ads.Ad{}, ErrAccess
+	}
+	if adId >= a.Repo.GetCurAvailableId() || adId < 0 {
+		return ads.Ad{}, ErrAvailabilityAd
+	}
+	ad := a.Repo.Get(adId)
+	return ad, nil
 }
 
 func (a *AdApp) CreateUser(ctx context.Context, nickname, email string) (users.User, error) {

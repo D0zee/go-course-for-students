@@ -11,7 +11,7 @@ func adRouter(r *gin.RouterGroup, a app.App) {
 	r.PUT("/:id/status", changeAdStatus(a))
 	r.PUT("/:id", updateAd(a))
 
-	//r.GET()
+	r.GET("/:id", getAd(a))
 
 }
 
