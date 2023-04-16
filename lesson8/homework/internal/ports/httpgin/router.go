@@ -6,8 +6,10 @@ import (
 	"homework8/internal/app"
 )
 
-func AppRouter(r gin.IRoutes, a app.App) {
-	r.POST("/ads", createAd(a)) // Метод для создания объявления (ad)
-	//r.PUT("/ads/:ad_id/status", changeAdStatus(a)) // Метод для изменения статуса объявления (опубликовано - Published = true или снято с публикации Published = false)
-	//r.PUT("/ads/:ad_id", updateAd(a))              // Метод для обновления текста(Text) или заголовка(Title) объявления
+func AppRouter(r *gin.RouterGroup, a app.App) {
+	r.POST("/ads", createAd(a))
+	//s.app.GET("/api/v1/ads", showListAds(a))
+	r.PUT("/ads/:id/status", changeAdStatus(a))
+	r.PUT("/ads/:id", updateAd(a))
+
 }
