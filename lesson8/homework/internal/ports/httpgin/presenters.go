@@ -50,7 +50,7 @@ type changeUserRequest struct {
 	Data string `json:"data"`
 }
 
-func AdSuccessResponse(ad *ads.Ad) *gin.H {
+func AdSuccessResponse(ad ads.Ad) *gin.H {
 	return &gin.H{
 		"data": adResponse{
 			ID:        ad.ID,

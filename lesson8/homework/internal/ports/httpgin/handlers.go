@@ -3,7 +3,7 @@ package httpgin
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
-	"homework8/internal/users"
+	//"homework8/internal/users"
 	"log"
 	"net/http"
 	"strconv"
@@ -151,7 +151,7 @@ func getAd(a app.App) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, AdSuccessResponse(&ad))
+		c.JSON(http.StatusOK, AdSuccessResponse(ad))
 	}
 }
 
@@ -174,49 +174,49 @@ func CreateUser(a app.App) gin.HandlerFunc {
 	}
 }
 
-type method int64
-
-const (
-	changeEmail method = iota
-	changeNickname
-)
-
-// ChangeUser - Method for changing different fields of user structure
-func ChangeUser(a app.App, m method) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req changeUserRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse(err))
-			return
-		}
-
-		if c.Param("id") == "" {
-			c.JSON(http.StatusBadRequest, ErrorResponse(ErrEmptyQueryParam))
-			return
-		}
-		id, err := strconv.Atoi(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse(err))
-			return
-		}
-
-		var user users.User
-		switch m {
-		case changeNickname:
-			user, err = a.UpdateNickname(c, int64(id), req.Data)
-		case changeEmail:
-			user, err = a.UpdateEmail(c, int64(id), req.Data)
-		}
-
-		if err != nil {
-			if errors.Is(err, app.ErrWrongUserId) {
-				c.JSON(http.StatusBadRequest, ErrorResponse(err))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
-			return
-		}
-
-		c.JSON(http.StatusOK, UserSuccessResponse(user))
-	}
-}
+//type method int64
+//
+//const (
+//	changeEmail method = iota
+//	changeNickname
+//)
+//
+//// ChangeUser - Method for changing different fields of user structure
+//func ChangeUser(a app.App, m method) gin.HandlerFunc {
+//	return func(c *gin.Context) {
+//		var req changeUserRequest
+//		if err := c.ShouldBindJSON(&req); err != nil {
+//			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+//			return
+//		}
+//
+//		if c.Param("id") == "" {
+//			c.JSON(http.StatusBadRequest, ErrorResponse(ErrEmptyQueryParam))
+//			return
+//		}
+//		id, err := strconv.Atoi(c.Param("id"))
+//		if err != nil {
+//			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+//			return
+//		}
+//
+//		var user users.User
+//		switch m {
+//		case changeNickname:
+//			user, err = a.UpdateNickname(c, int64(id), req.Data)
+//		case changeEmail:
+//			user, err = a.UpdateEmail(c, int64(id), req.Data)
+//		}
+//
+//		if err != nil {
+//			if errors.Is(err, app.ErrWrongUserId) {
+//				c.JSON(http.StatusBadRequest, ErrorResponse(err))
+//				return
+//			}
+//			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
+//			return
+//		}
+//
+//		c.JSON(http.StatusOK, UserSuccessResponse(user))
+//	}
+//}

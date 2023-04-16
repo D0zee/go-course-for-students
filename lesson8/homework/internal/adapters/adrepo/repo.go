@@ -5,73 +5,98 @@ import (
 	"homework8/internal/users"
 )
 
-type Repository interface {
-	Insert(ad ads.Ad)
-	Get(adId int64) ads.Ad
+type Repository[T any] interface {
+	Insert(object *T)
+	Get(id int64) (*T, bool)
 	GetCurAvailableId() int64
-	ReplaceById(ad ads.Ad, adId, userId int64)
-	CheckAccess(adId, userId int64) bool
-
-	InsertUser(user *users.User)
-	GetUserById(id int64) *users.User
-	ContainsUserWithId(id int64) bool
-	GetNextUserId() int64
+	//ReplaceById(object T, id int64)
 }
 
-type adRepo struct {
-	CurAdId  int64
-	AddById  map[int64]ads.Ad
-	AdToUser map[int64]int64
-
-	CurUserId int64
-	IdToUser  map[int64]*users.User
+type myRepo[T any] struct {
+	CurId   int64
+	IdToObj map[int64]*T
 }
 
-func (m *adRepo) Insert(ad ads.Ad) {
-	adId := ad.ID
-	m.AddById[adId] = ad
-	m.AdToUser[adId] = ad.AuthorID
-	m.CurAdId++
+func (r *myRepo[T]) Insert(obj *T) {
+	r.IdToObj[r.CurId] = obj
+	r.CurId++
 }
 
-func (m *adRepo) Get(adId int64) ads.Ad {
-	return m.AddById[adId]
-}
-
-func (m *adRepo) ReplaceById(ad ads.Ad, adId, userId int64) {
-	m.AddById[adId] = ad
-}
-
-func (m *adRepo) GetCurAvailableId() int64 {
-	return m.CurAdId
-}
-
-func (m *adRepo) CheckAccess(adId, userId int64) bool {
-	return m.AdToUser[adId] == userId
-}
-
-func (s *adRepo) InsertUser(user *users.User) {
-	s.IdToUser[s.CurUserId] = user
-	s.CurUserId++
-}
-
-func (s *adRepo) GetNextUserId() int64 {
-	return s.CurUserId
-}
-
-func (s *adRepo) GetUserById(id int64) *users.User {
-	return s.IdToUser[id]
-}
-
-func (s *adRepo) ContainsUserWithId(id int64) bool {
-	if _, contain := s.IdToUser[id]; !contain {
-		return false
+func (r *myRepo[T]) Get(id int64) (*T, bool) {
+	value, contain := r.IdToObj[id]
+	if !contain {
+		return nil, false
 	}
-	return true
+	return value, true
 }
 
-func New() Repository {
-	return &adRepo{CurAdId: 0,
-		AddById:  make(map[int64]ads.Ad),
-		AdToUser: make(map[int64]int64)}
+func (r *myRepo[T]) GetCurAvailableId() int64 {
+	return r.CurId
 }
+
+func NewAdRepo() Repository[ads.Ad] {
+	return &myRepo[ads.Ad]{CurId: 0,
+		IdToObj: make(map[int64]*ads.Ad)}
+}
+
+func NewUserRepo() Repository[users.User] {
+	return &myRepo[users.User]{CurId: 0,
+		IdToObj: make(map[int64]*users.User)}
+}
+
+//type userRepo struct {
+//	CurUserId int64
+//	IdToUser  map[int64]users.User
+//}
+//
+//func (r *userRepo) Insert(user users.User) {
+//	r.IdToUser[r.CurUserId] = user
+//	r.CurUserId++
+//}
+//
+//func (r *userRepo) Get(id int64) (users.User, bool) {
+//	return r.IdToUser[id]
+//}
+//
+//func (r *userRepo) GetCurAvailableId() int64 {
+//	return r.CurUserId
+//}
+//
+//func (r *userRepo) ReplaceById(user users.User, id int64) {
+//	r.IdToUser[id] = user
+//}
+
+//func (r *adRepo) ReplaceById(ad ads.Ad, adId int64) {
+//	r.AddById[adId] = ad
+//}
+//
+//func (r *adRepo) GetCurAvailableId() int64 {
+//	return r.CurAdId
+//}
+//
+//type adRepo struct {
+//	CurAdId int64
+//	AddById map[int64]ads.Ad
+//}
+//
+//func (r *adRepo) Insert(ad ads.Ad) {
+//	adId := ad.ID
+//	r.AddById[adId] = ad
+//	r.CurAdId++
+//}
+//
+//func (r *adRepo) Get(adId int64) (ads.Ad, bool) {
+//	value, contain := r.AddById[adId]
+//	if !contain {
+//		return ads.Ad{}, false
+//	}
+//	return value, true
+//}
+//
+//func (r *adRepo) ReplaceById(ad ads.Ad, adId int64) {
+//	r.AddById[adId] = ad
+//}
+//
+//func (r *adRepo) GetCurAvailableId() int64 {
+//	return r.CurAdId
+//}

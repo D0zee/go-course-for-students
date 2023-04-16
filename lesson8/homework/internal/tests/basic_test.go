@@ -9,30 +9,37 @@ import (
 func TestCreateAd(t *testing.T) {
 	client := getTestClient()
 
-	response, err := client.createAd(123, "hello", "world")
+	uResponse, err := client.createUser("Oleg", "ya@ya.ru")
+	assert.NoError(t, err)
+
+	response, err := client.createAd(uResponse.Data.ID, "hello", "world")
 	assert.NoError(t, err)
 	assert.Zero(t, response.Data.ID)
 	assert.Equal(t, response.Data.Title, "hello")
 	assert.Equal(t, response.Data.Text, "world")
-	assert.Equal(t, response.Data.AuthorID, int64(123))
+	assert.Equal(t, response.Data.AuthorID, int64(0))
 	assert.False(t, response.Data.Published)
 }
 
 func TestChangeAdStatus(t *testing.T) {
 	client := getTestClient()
 
-	response, err := client.createAd(123, "hello", "world")
+	uResponse, err := client.createUser("Oleg", "ya@ya.ru")
+	assert.NoError(t, err)
+	userId := uResponse.Data.ID
+
+	response, err := client.createAd(userId, "hello", "world")
 	assert.NoError(t, err)
 
-	response, err = client.changeAdStatus(123, response.Data.ID, true)
+	response, err = client.changeAdStatus(userId, response.Data.ID, true)
 	assert.NoError(t, err)
 	assert.True(t, response.Data.Published)
 
-	response, err = client.changeAdStatus(123, response.Data.ID, false)
+	response, err = client.changeAdStatus(userId, response.Data.ID, false)
 	assert.NoError(t, err)
 	assert.False(t, response.Data.Published)
 
-	response, err = client.changeAdStatus(123, response.Data.ID, false)
+	response, err = client.changeAdStatus(userId, response.Data.ID, false)
 	assert.NoError(t, err)
 	assert.False(t, response.Data.Published)
 }
@@ -40,10 +47,15 @@ func TestChangeAdStatus(t *testing.T) {
 func TestUpdateAd(t *testing.T) {
 	client := getTestClient()
 
-	response, err := client.createAd(123, "hello", "world")
+	uResponse, err := client.createUser("Oleg", "ya@ya.ru")
 	assert.NoError(t, err)
 
-	response, err = client.updateAd(123, response.Data.ID, "привет", "мир")
+	userId := uResponse.Data.ID
+
+	response, err := client.createAd(userId, "hello", "world")
+	assert.NoError(t, err)
+
+	response, err = client.updateAd(userId, response.Data.ID, "привет", "мир")
 	assert.NoError(t, err)
 	assert.Equal(t, response.Data.Title, "привет")
 	assert.Equal(t, response.Data.Text, "мир")
@@ -52,13 +64,18 @@ func TestUpdateAd(t *testing.T) {
 func TestListAds(t *testing.T) {
 	client := getTestClient()
 
-	response, err := client.createAd(123, "hello", "world")
+	uResponse, err := client.createUser("Oleg", "ya@ya.ru")
 	assert.NoError(t, err)
 
-	publishedAd, err := client.changeAdStatus(123, response.Data.ID, true)
+	userId := uResponse.Data.ID
+
+	response, err := client.createAd(userId, "hello", "world")
 	assert.NoError(t, err)
 
-	_, err = client.createAd(123, "best cat", "not for sale")
+	publishedAd, err := client.changeAdStatus(userId, response.Data.ID, true)
+	assert.NoError(t, err)
+
+	_, err = client.createAd(userId, "best cat", "not for sale")
 	assert.NoError(t, err)
 
 	ads, err := client.listAds()
