@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/D0zee/advalidator"
 	"homework8/internal/adapters/adrepo"
-	"homework8/internal/adapters/userrepo"
 	"homework8/internal/ads"
 	"homework8/internal/users"
 )
@@ -28,8 +27,7 @@ type App interface {
 }
 
 type AdApp struct {
-	Repo     adrepo.Repository
-	UserRepo userrepo.Repository
+	Repo adrepo.Repository
 }
 
 func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) (*ads.Ad, error) {
@@ -102,10 +100,10 @@ func (a *AdApp) CreateUser(ctx context.Context, nickname, email string) (users.U
 		return users.User{}, ErrInternal
 	default:
 	}
-	userId := a.UserRepo.GetCurrentId()
+	userId := a.Repo.GetNextUserId()
 	user := users.New(userId, nickname, email)
 	// todo: validation of fields
-	a.UserRepo.Insert(user)
+	a.Repo.InsertUser(user)
 	return *user, nil
 }
 
@@ -115,10 +113,10 @@ func (a *AdApp) UpdateNickname(ctx context.Context, userId int64, nickname strin
 		return users.User{}, ErrInternal
 	default:
 	}
-	if !a.UserRepo.ContainsUserWithId(userId) {
+	if !a.Repo.ContainsUserWithId(userId) {
 		return users.User{}, ErrWrongUserId
 	}
-	user := a.UserRepo.GetById(userId)
+	user := a.Repo.GetUserById(userId)
 	user.Nickname = nickname
 	return *user, nil
 }
@@ -129,14 +127,14 @@ func (a *AdApp) UpdateEmail(ctx context.Context, userId int64, email string) (us
 		return users.User{}, ErrInternal
 	default:
 	}
-	if !a.UserRepo.ContainsUserWithId(userId) {
+	if !a.Repo.ContainsUserWithId(userId) {
 		return users.User{}, errors.New("not contain user with this id")
 	}
-	user := a.UserRepo.GetById(userId)
+	user := a.Repo.GetUserById(userId)
 	user.Email = email
 	return *user, nil
 }
 
-func NewApp(repo adrepo.Repository, userRepo userrepo.Repository) App {
-	return &AdApp{Repo: repo, UserRepo: userRepo}
+func NewApp(repo adrepo.Repository) App {
+	return &AdApp{Repo: repo}
 }

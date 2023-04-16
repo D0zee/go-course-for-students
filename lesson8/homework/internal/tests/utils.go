@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"homework8/internal/adapters/userrepo"
 	"io"
 	"log"
 	"net/http"
@@ -52,7 +51,7 @@ type testClient struct {
 }
 
 func getTestClient() *testClient {
-	server := httpgin.NewHTTPServer(":18080", app.NewApp(adrepo.New(), userrepo.New()))
+	server := httpgin.NewHTTPServer(":18080", app.NewApp(adrepo.New()))
 	testServer := httptest.NewServer(server.Handler())
 
 	return &testClient{
