@@ -14,11 +14,12 @@ type Server struct {
 }
 
 func NewHTTPServer(port string, a app.App) Server {
-	gin.SetMode(gin.ReleaseMode)
+	//gin.SetMode(gin.ReleaseMode)
 	s := Server{port: port, app: gin.New()}
-
-	// todo: add your own logic
-
+	s.app.POST("/api/v1/ads", createAd(a))
+	//s.app.GET("/api/v1/ads", showListAds(a))
+	s.app.PUT("/api/v1/ads/:id/status", changeAdStatus(a))
+	s.app.PUT("/api/v1/ads/:id", updateAd(a))
 	return s
 }
 
