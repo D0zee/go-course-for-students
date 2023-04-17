@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"homework8/internal/ads"
 	"homework8/internal/users"
+	"time"
 )
 
 type createAdRequest struct {
@@ -13,11 +14,13 @@ type createAdRequest struct {
 }
 
 type adResponse struct {
-	ID        int64  `json:"id"`
-	Title     string `json:"title"`
-	Text      string `json:"text"`
-	AuthorID  int64  `json:"author_id"`
-	Published bool   `json:"published"`
+	ID           int64     `json:"id"`
+	Title        string    `json:"title"`
+	Text         string    `json:"text"`
+	AuthorID     int64     `json:"author_id"`
+	Published    bool      `json:"published"`
+	CreationTime time.Time `json:"creation_time"`
+	UpdateTime   time.Time `json:"update_time"`
 }
 
 type changeAdStatusRequest struct {
@@ -53,11 +56,13 @@ type changeUserRequest struct {
 func AdSuccessResponse(ad ads.Ad) *gin.H {
 	return &gin.H{
 		"data": adResponse{
-			ID:        ad.ID,
-			Title:     ad.Title,
-			Text:      ad.Text,
-			AuthorID:  ad.AuthorID,
-			Published: ad.Published,
+			ID:           ad.ID,
+			Title:        ad.Title,
+			Text:         ad.Text,
+			AuthorID:     ad.AuthorID,
+			Published:    ad.Published,
+			CreationTime: ad.CreationTime,
+			UpdateTime:   ad.UpdateTime,
 		},
 		"error": nil,
 	}

@@ -9,7 +9,6 @@ type Repository[T any] interface {
 	Insert(object *T)
 	Get(id int64) (*T, bool)
 	GetCurAvailableId() int64
-	//ReplaceById(object T, id int64)
 }
 
 type myRepo[T any] struct {

@@ -29,12 +29,12 @@ func createAd(a app.App) gin.HandlerFunc {
 		ad, err := a.CreateAd(c, reqBody.Title, reqBody.Text, reqBody.UserID)
 		if errors.Is(err, app.ErrValidate) {
 			c.JSON(http.StatusBadRequest, ErrorResponse(err))
-			log.Println(err)
+			log.Println("error validation:", err)
 			return
 		}
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
-			log.Println(err)
+			log.Println("error response IDK:", err)
 			return
 		}
 		log.Println("AD:", ad)

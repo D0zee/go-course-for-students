@@ -3,10 +3,13 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/D0zee/advalidator"
 	"homework8/internal/adapters/adrepo"
 	"homework8/internal/ads"
 	"homework8/internal/users"
+	"log"
+	"time"
 )
 
 var ErrInternal = errors.New("internal error")
@@ -34,16 +37,22 @@ type AdApp struct {
 func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) (ads.Ad, error) {
 	select {
 	case <-ctx.Done():
+		log.Println("APP: troubles with context")
 		return ads.Ad{}, ErrInternal
 	default:
 	}
 	_, contain := a.UserRepo.Get(userId)
 	if !contain {
+		log.Println("APP: access error")
 		return ads.Ad{}, ErrAccess
 	}
 
-	ad := ads.Ad{ID: a.Repo.GetCurAvailableId(), Title: title, Text: text, AuthorID: userId}
+	currentTime := time.Now()
+	ad := ads.Ad{ID: a.Repo.GetCurAvailableId(), Title: title, Text: text,
+		AuthorID: userId, CreationTime: currentTime, UpdateTime: currentTime}
+	fmt.Println("AD:", ad)
 	if err := advalidator.Validate(ad); err != nil {
+		log.Println("APP: validation error")
 		return ads.Ad{}, ErrValidate
 	}
 	a.Repo.Insert(&ad)
@@ -76,6 +85,7 @@ func (a *AdApp) ChangeAdStatus(ctx context.Context, adId, userId int64, publishe
 		return ads.Ad{}, err
 	}
 	ad, _ := a.Repo.Get(adId)
+	ad.UpdateTime = time.Now()
 	ad.Published = published
 	return *ad, nil
 }
@@ -94,6 +104,7 @@ func (a *AdApp) UpdateAd(ctx context.Context, adId, userId int64, title, text st
 	newAd := *ad
 	newAd.Title = title
 	newAd.Text = text
+	newAd.UpdateTime = time.Now()
 	if err := advalidator.Validate(newAd); err != nil {
 		return ads.Ad{}, ErrValidate
 	}
