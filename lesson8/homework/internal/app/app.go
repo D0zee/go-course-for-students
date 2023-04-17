@@ -21,12 +21,21 @@ type App interface {
 	ChangeAdStatus(ctx context.Context, adId, userId int64, published bool) (ads.Ad, error)
 	UpdateAd(ctx context.Context, adId, userId int64, title, text string) (ads.Ad, error)
 	GetAdById(ctx context.Context, adId, userId int64) (ads.Ad, error)
-	Access(adId, userId int64) error
+	access(adId, userId int64) error
 
 	ListAds(ctx context.Context) []ads.Ad
 
 	CreateUser(ctx context.Context, nickname, email string) (users.User, error)
 	UpdateUser(ctx context.Context, userId int64, nickname string, m Method) (users.User, error)
+}
+
+func contextEnd(ctx context.Context) bool {
+	select {
+	case <-ctx.Done():
+		return true
+	default:
+		return false
+	}
 }
 
 type AdApp struct {
@@ -35,10 +44,8 @@ type AdApp struct {
 }
 
 func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) (ads.Ad, error) {
-	select {
-	case <-ctx.Done():
-		return ads.Ad{}, ErrInternal
-	default:
+	if contextEnd(ctx) {
+		return ads.Ad{}, nil
 	}
 	_, contain := a.UserRepo.Get(userId)
 	if !contain {
@@ -55,7 +62,7 @@ func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) 
 	return ad, nil
 }
 
-func (a *AdApp) Access(adId, userId int64) error {
+func (a *AdApp) access(adId, userId int64) error {
 	user, contain := a.UserRepo.Get(userId)
 	if !contain {
 		return ErrAccess
@@ -72,12 +79,10 @@ func (a *AdApp) Access(adId, userId int64) error {
 }
 
 func (a *AdApp) ChangeAdStatus(ctx context.Context, adId, userId int64, published bool) (ads.Ad, error) {
-	select {
-	case <-ctx.Done():
+	if contextEnd(ctx) {
 		return ads.Ad{}, ErrInternal
-	default:
 	}
-	if err := a.Access(adId, userId); err != nil {
+	if err := a.access(adId, userId); err != nil {
 		return ads.Ad{}, err
 	}
 	ad, _ := a.Repo.Get(adId)
@@ -87,12 +92,10 @@ func (a *AdApp) ChangeAdStatus(ctx context.Context, adId, userId int64, publishe
 }
 
 func (a *AdApp) UpdateAd(ctx context.Context, adId, userId int64, title, text string) (ads.Ad, error) {
-	select {
-	case <-ctx.Done():
+	if contextEnd(ctx) {
 		return ads.Ad{}, ErrInternal
-	default:
 	}
-	if err := a.Access(adId, userId); err != nil {
+	if err := a.access(adId, userId); err != nil {
 		return ads.Ad{}, err
 	}
 	ad, _ := a.Repo.Get(adId)
@@ -109,12 +112,10 @@ func (a *AdApp) UpdateAd(ctx context.Context, adId, userId int64, title, text st
 }
 
 func (a *AdApp) GetAdById(ctx context.Context, adId, userId int64) (ads.Ad, error) {
-	select {
-	case <-ctx.Done():
+	if contextEnd(ctx) {
 		return ads.Ad{}, ErrInternal
-	default:
 	}
-	if err := a.Access(adId, userId); err != nil {
+	if err := a.access(adId, userId); err != nil {
 		return ads.Ad{}, err
 	}
 	ad, _ := a.Repo.Get(adId)
@@ -136,10 +137,8 @@ func (a *AdApp) ListAds(ctx context.Context) []ads.Ad {
 }
 
 func (a *AdApp) CreateUser(ctx context.Context, nickname, email string) (users.User, error) {
-	select {
-	case <-ctx.Done():
+	if contextEnd(ctx) {
 		return users.User{}, ErrInternal
-	default:
 	}
 	userId := a.UserRepo.GetCurAvailableId()
 	user := users.New(userId, nickname, email)
@@ -155,10 +154,8 @@ const (
 )
 
 func (a *AdApp) UpdateUser(ctx context.Context, userId int64, data string, m Method) (users.User, error) {
-	select {
-	case <-ctx.Done():
+	if contextEnd(ctx) {
 		return users.User{}, ErrInternal
-	default:
 	}
 	user, contain := a.UserRepo.Get(userId)
 	if !contain {
