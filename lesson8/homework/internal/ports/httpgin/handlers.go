@@ -4,8 +4,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"homework8/internal/ads"
-	//"homework8/internal/users"
-	"log"
+
 	"net/http"
 	"strconv"
 
@@ -19,26 +18,21 @@ func createAd(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody createAdRequest
 		err := c.ShouldBindJSON(&reqBody)
-		log.Println("BODY:", reqBody)
 
 		if err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse(err))
-			log.Println("error with parse json:", err)
 			return
 		}
 
 		ad, err := a.CreateAd(c, reqBody.Title, reqBody.Text, reqBody.UserID)
 		if errors.Is(err, app.ErrValidate) {
 			c.JSON(http.StatusBadRequest, ErrorResponse(err))
-			log.Println("error validation:", err)
 			return
 		}
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
-			log.Println("error response IDK:", err)
 			return
 		}
-		log.Println("AD:", ad)
 		c.JSON(http.StatusOK, AdSuccessResponse(ad))
 	}
 }
@@ -64,7 +58,6 @@ func changeAdStatus(a app.App) gin.HandlerFunc {
 		}
 
 		ad, err := a.ChangeAdStatus(c, int64(adID), reqBody.UserID, reqBody.Published)
-		log.Println("AD IN CHANGE STATUS:", ad)
 		if errors.Is(err, app.ErrAccess) {
 			c.JSON(http.StatusForbidden, ErrorResponse(err))
 			return
@@ -233,16 +226,14 @@ func getListAds(a app.App) gin.HandlerFunc {
 			return
 		}
 		author := queryParam.AuthorID
+		date := queryParam.Time
+
 		if author != -1 {
 			f = func(ad ads.Ad) bool {
 				return ad.AuthorID == author
 			}
 			listAds = filter(listAds, f)
 		}
-
-		date := queryParam.Time
-		log.Println("AUTHOR:", author, " ", c.Query("author"))
-		log.Println("TIME:", date, date.IsZero())
 
 		if !date.IsZero() {
 			f = func(ad ads.Ad) bool {
@@ -254,10 +245,12 @@ func getListAds(a app.App) gin.HandlerFunc {
 			listAds = filter(listAds, f)
 		}
 
-		f = func(ad ads.Ad) bool {
-			return ad.Published
+		if author == -1 && date.IsZero() {
+			f = func(ad ads.Ad) bool {
+				return ad.Published
+			}
+			listAds = filter(listAds, f)
 		}
-		listAds = filter(listAds, f)
 		c.JSON(http.StatusOK, AdListSuccessResponse(listAds))
 	}
 }

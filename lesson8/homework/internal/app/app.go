@@ -3,12 +3,10 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/D0zee/advalidator"
 	"homework8/internal/adapters/adrepo"
 	"homework8/internal/ads"
 	"homework8/internal/users"
-	"log"
 	"time"
 )
 
@@ -39,22 +37,18 @@ type AdApp struct {
 func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) (ads.Ad, error) {
 	select {
 	case <-ctx.Done():
-		log.Println("APP: troubles with context")
 		return ads.Ad{}, ErrInternal
 	default:
 	}
 	_, contain := a.UserRepo.Get(userId)
 	if !contain {
-		log.Println("APP: access error")
 		return ads.Ad{}, ErrAccess
 	}
 
 	currentTime := time.Now()
 	ad := ads.Ad{ID: a.Repo.GetCurAvailableId(), Title: title, Text: text,
 		AuthorID: userId, CreationTime: currentTime, UpdateTime: currentTime}
-	fmt.Println("AD:", ad)
 	if err := advalidator.Validate(ad); err != nil {
-		log.Println("APP: validation error")
 		return ads.Ad{}, ErrValidate
 	}
 	a.Repo.Insert(&ad)
@@ -147,9 +141,8 @@ func (a *AdApp) CreateUser(ctx context.Context, nickname, email string) (users.U
 		return users.User{}, ErrInternal
 	default:
 	}
-	userId := a.Repo.GetCurAvailableId()
+	userId := a.UserRepo.GetCurAvailableId()
 	user := users.New(userId, nickname, email)
-	// todo: validation of fields
 	a.UserRepo.Insert(user)
 	return *user, nil
 }

@@ -1,10 +1,16 @@
 package tests
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"homework8/internal/app"
+	"net/url"
+	"strconv"
 	"testing"
+	"time"
 )
+
+// support of date are shown in basic tests
 
 func TestGetAd(t *testing.T) {
 	client := getTestClient()
@@ -33,4 +39,64 @@ func TestGetAd(t *testing.T) {
 	_, err = client.getAd(0, 122)
 	assert.Error(t, err, app.ErrAccess)
 
+}
+
+func equalityOfAds(t *testing.T, ad1 adData, ad2 adResponse) {
+	assert.Equal(t, ad1.ID, ad2.Data.ID)
+	assert.Equal(t, ad1.Title, ad2.Data.Title)
+	assert.Equal(t, ad1.Text, ad2.Data.Text)
+	assert.Equal(t, ad1.AuthorID, ad2.Data.AuthorID)
+	assert.Equal(t, ad1.Published, ad2.Data.Published)
+}
+
+func TestListAdsFilter(t *testing.T) {
+	client := getTestClient()
+
+	uResponse, err := client.createUser("Oleg", "ya@ya.ru")
+	assert.NoError(t, err)
+	userId1 := uResponse.Data.ID
+
+	response, err := client.createAd(userId1, "hello", "world")
+	assert.NoError(t, err)
+
+	ad1, err := client.changeAdStatus(userId1, response.Data.ID, true)
+	assert.NoError(t, err)
+
+	ad2, err := client.createAd(userId1, "best cat", "not for sale")
+	assert.NoError(t, err)
+
+	uResponse, err = client.createUser("Ivan", "you@ya.ru")
+	assert.NoError(t, err)
+
+	userId2 := uResponse.Data.ID
+
+	ad3, err := client.createAd(userId2, "ad from IVAN", "it's my ad")
+	assert.NoError(t, err)
+
+	v := url.Values{}
+	v.Add("author_id", strconv.Itoa(int(userId1)))
+	queryString := v.Encode()
+
+	ads, err := client.listAds(queryString)
+	assert.NoError(t, err)
+	assert.Len(t, ads.Data, 2)
+	equalityOfAds(t, ads.Data[0], ad1)
+	equalityOfAds(t, ads.Data[1], ad2)
+
+	v = url.Values{}
+	currentTime := time.Now()
+	dateStr := currentTime.Format(time.DateOnly)
+	v.Add("time", dateStr)
+	queryString = v.Encode()
+
+	ads, err = client.listAds(queryString)
+	fmt.Println()
+	fmt.Println()
+
+	assert.NoError(t, err)
+	assert.Len(t, ads.Data, 3)
+	equalityOfAds(t, ads.Data[0], ad1)
+	equalityOfAds(t, ads.Data[1], ad2)
+	equalityOfAds(t, ads.Data[2], ad3)
+	
 }

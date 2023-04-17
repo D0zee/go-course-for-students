@@ -200,8 +200,11 @@ func (tc *testClient) updateAd(userID int64, adID int64, title string, text stri
 	return response, nil
 }
 
-func (tc *testClient) listAds() (adsResponse, error) {
-	req, err := http.NewRequest(http.MethodGet, tc.baseURL+"/api/v1/ads", nil)
+func (tc *testClient) listAds(filters string) (adsResponse, error) {
+	if filters != "" {
+		filters = "?" + filters
+	}
+	req, err := http.NewRequest(http.MethodGet, tc.baseURL+"/api/v1/ads"+filters, nil)
 	if err != nil {
 		return adsResponse{}, fmt.Errorf("unable to create request: %w", err)
 	}
