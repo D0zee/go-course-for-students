@@ -23,10 +23,6 @@ type adResponse struct {
 	UpdateTime   time.Time `json:"update_time"`
 }
 
-type adsResponse struct {
-	Data []adResponse `json:"ads"`
-}
-
 type changeAdStatusRequest struct {
 	Published bool  `json:"published"`
 	UserID    int64 `json:"user_id"`
