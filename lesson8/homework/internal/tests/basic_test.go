@@ -2,9 +2,14 @@ package tests
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func isSameDate(t1, t2 time.Time) bool {
+	return t1.Year() == t2.Year() && t1.Month() == t2.Month() && t1.Day() == t2.Day()
+}
 
 func TestCreateAd(t *testing.T) {
 	client := getTestClient()
@@ -19,6 +24,8 @@ func TestCreateAd(t *testing.T) {
 	assert.Equal(t, response.Data.Text, "world")
 	assert.Equal(t, response.Data.AuthorID, int64(0))
 	assert.False(t, response.Data.Published)
+	assert.True(t, isSameDate(response.Data.CreationTime, time.Now()))
+	assert.True(t, isSameDate(response.Data.UpdateTime, time.Now()))
 }
 
 func TestChangeAdStatus(t *testing.T) {
@@ -34,10 +41,12 @@ func TestChangeAdStatus(t *testing.T) {
 	response, err = client.changeAdStatus(userId, response.Data.ID, true)
 	assert.NoError(t, err)
 	assert.True(t, response.Data.Published)
+	assert.True(t, isSameDate(response.Data.UpdateTime, time.Now()))
 
 	response, err = client.changeAdStatus(userId, response.Data.ID, false)
 	assert.NoError(t, err)
 	assert.False(t, response.Data.Published)
+	assert.True(t, isSameDate(response.Data.UpdateTime, time.Now()))
 
 	response, err = client.changeAdStatus(userId, response.Data.ID, false)
 	assert.NoError(t, err)
@@ -59,6 +68,7 @@ func TestUpdateAd(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, response.Data.Title, "привет")
 	assert.Equal(t, response.Data.Text, "мир")
+	assert.True(t, isSameDate(response.Data.UpdateTime, time.Now()))
 }
 
 func TestListAds(t *testing.T) {

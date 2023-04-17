@@ -12,7 +12,7 @@ func adRouter(r *gin.RouterGroup, a app.App) {
 	r.PUT("/:id", updateAd(a))
 
 	r.GET("/:id", getAd(a))
-
+	r.GET("/", getListAds(a))
 }
 
 func userRouter(r *gin.RouterGroup, a app.App) {

@@ -25,6 +25,8 @@ type App interface {
 	GetAdById(ctx context.Context, adId, userId int64) (ads.Ad, error)
 	Access(adId, userId int64) error
 
+	ListAds(ctx context.Context) []ads.Ad
+
 	CreateUser(ctx context.Context, nickname, email string) (users.User, error)
 	UpdateUser(ctx context.Context, userId int64, nickname string, m Method) (users.User, error)
 }
@@ -123,6 +125,20 @@ func (a *AdApp) GetAdById(ctx context.Context, adId, userId int64) (ads.Ad, erro
 	}
 	ad, _ := a.Repo.Get(adId)
 	return *ad, nil
+}
+
+func (a *AdApp) ListAds(ctx context.Context) []ads.Ad {
+	select {
+	case <-ctx.Done():
+		return []ads.Ad{}
+	default:
+	}
+	var result []ads.Ad
+	for i := int64(0); i < a.Repo.GetCurAvailableId(); i++ {
+		ad, _ := a.Repo.Get(i)
+		result = append(result, *ad)
+	}
+	return result
 }
 
 func (a *AdApp) CreateUser(ctx context.Context, nickname, email string) (users.User, error) {

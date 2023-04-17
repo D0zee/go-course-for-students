@@ -3,6 +3,7 @@ package httpgin
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"homework8/internal/ads"
 	//"homework8/internal/users"
 	"log"
 	"net/http"
@@ -205,5 +206,58 @@ func ChangeUser(a app.App, m app.Method) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, UserSuccessResponse(user))
+	}
+}
+
+type adPredicate func(ad ads.Ad) bool
+
+func filter(Ads []ads.Ad, p adPredicate) []ads.Ad {
+	var result []ads.Ad
+	for _, ad := range Ads {
+		if p(ad) {
+			result = append(result, ad)
+		}
+	}
+	return result
+}
+
+func getListAds(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		listAds := a.ListAds(c)
+		var f adPredicate
+
+		var queryParam filterQueryRequest
+
+		if err := c.ShouldBindQuery(&queryParam); err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+		author := queryParam.AuthorID
+		if author != -1 {
+			f = func(ad ads.Ad) bool {
+				return ad.AuthorID == author
+			}
+			listAds = filter(listAds, f)
+		}
+
+		date := queryParam.Time
+		log.Println("AUTHOR:", author, " ", c.Query("author"))
+		log.Println("TIME:", date, date.IsZero())
+
+		if !date.IsZero() {
+			f = func(ad ads.Ad) bool {
+				adTime := ad.CreationTime
+				return date.Day() == adTime.Day() &&
+					date.Month() == adTime.Month() &&
+					date.Year() == adTime.Year()
+			}
+			listAds = filter(listAds, f)
+		}
+
+		f = func(ad ads.Ad) bool {
+			return ad.Published
+		}
+		listAds = filter(listAds, f)
+		c.JSON(http.StatusOK, AdListSuccessResponse(listAds))
 	}
 }

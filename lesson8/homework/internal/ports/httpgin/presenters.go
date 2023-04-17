@@ -23,6 +23,10 @@ type adResponse struct {
 	UpdateTime   time.Time `json:"update_time"`
 }
 
+type adsResponse struct {
+	Data []adResponse `json:"ads"`
+}
+
 type changeAdStatusRequest struct {
 	Published bool  `json:"published"`
 	UserID    int64 `json:"user_id"`
@@ -53,6 +57,11 @@ type changeUserRequest struct {
 	Data string `json:"data"`
 }
 
+type filterQueryRequest struct {
+	AuthorID int64     `form:"author_id,default=-1"`
+	Time     time.Time `form:"time" time_format:"2006-01-02"`
+}
+
 func AdSuccessResponse(ad ads.Ad) *gin.H {
 	return &gin.H{
 		"data": adResponse{
@@ -65,6 +74,24 @@ func AdSuccessResponse(ad ads.Ad) *gin.H {
 			UpdateTime:   ad.UpdateTime,
 		},
 		"error": nil,
+	}
+}
+
+func AdListSuccessResponse(ads []ads.Ad) *gin.H {
+	var responces []adResponse
+	for _, ad := range ads {
+		responces = append(responces, adResponse{
+			ID:           ad.ID,
+			Title:        ad.Title,
+			Text:         ad.Text,
+			AuthorID:     ad.AuthorID,
+			Published:    ad.Published,
+			CreationTime: ad.CreationTime,
+			UpdateTime:   ad.UpdateTime,
+		})
+	}
+	return &gin.H{
+		"data": responces,
 	}
 }
 
