@@ -16,8 +16,13 @@ type Server struct {
 func NewHTTPServer(port string, a app.App) Server {
 	gin.SetMode(gin.ReleaseMode)
 	s := Server{port: port, app: gin.New()}
+	s.app.Use(gin.Logger())
+	s.app.Use(Recovery)
+	adsRoute := s.app.Group("/api/v1/ads")
+	adRouter(adsRoute, a)
 
-	// todo: add your own logic
+	userRoute := s.app.Group("api/v1/users")
+	userRouter(userRoute, a)
 
 	return s
 }
