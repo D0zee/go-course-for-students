@@ -268,3 +268,27 @@ func (tc *testClient) updateUser(id int64, field, fieldData string) (userRespons
 	}
 	return response, nil
 }
+
+func (tc *testClient) getAdsByTitle(title string) (adsResponse, error) {
+	body := map[string]any{
+		"title": title,
+	}
+
+	data, err := json.Marshal(body)
+	if err != nil {
+		return adsResponse{}, fmt.Errorf("unable to marshal: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodGet, tc.baseURL+"/api/v1/ads/title", bytes.NewReader(data))
+	if err != nil {
+		return adsResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	var response adsResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return adsResponse{}, err
+	}
+
+	return response, nil
+}

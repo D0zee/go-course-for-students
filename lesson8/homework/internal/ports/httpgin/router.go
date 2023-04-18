@@ -13,6 +13,8 @@ func adRouter(r *gin.RouterGroup, a app.App) {
 
 	r.GET("/:id", getAd(a))
 	r.GET("/", getListAds(a))
+
+	r.GET("/title", getAdsByTitle(a))
 }
 
 func userRouter(r *gin.RouterGroup, a app.App) {

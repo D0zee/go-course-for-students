@@ -98,5 +98,39 @@ func TestListAdsFilter(t *testing.T) {
 	equalityOfAds(t, ads.Data[0], ad1)
 	equalityOfAds(t, ads.Data[1], ad2)
 	equalityOfAds(t, ads.Data[2], ad3)
-	
+
+}
+
+func TestAdsByTitle(t *testing.T) {
+	client := getTestClient()
+
+	uResponse, err := client.createUser("Oleg", "ya@ya.ru")
+	assert.NoError(t, err)
+	userId1 := uResponse.Data.ID
+
+	uResponse, err = client.createUser("Ivan", "aboba@ya.ru")
+	assert.NoError(t, err)
+	userId2 := uResponse.Data.ID
+
+	ad1, err := client.createAd(userId1, "hello", "world")
+	assert.NoError(t, err)
+
+	ad2, err := client.createAd(userId2, "hello", "Hello spectators!")
+	assert.NoError(t, err)
+
+	ad3, err := client.createAd(userId2, "go is cool", "Hello spectators!")
+	assert.NoError(t, err)
+
+	helloAds, err := client.getAdsByTitle("hello")
+	assert.NoError(t, err)
+	assert.Len(t, helloAds.Data, 2)
+
+	equalityOfAds(t, helloAds.Data[0], ad1)
+	equalityOfAds(t, helloAds.Data[1], ad2)
+
+	ad_, err := client.getAdsByTitle("go is cool")
+	assert.NoError(t, err)
+	assert.Len(t, ad_.Data, 1)
+	equalityOfAds(t, ad_.Data[0], ad3)
+
 }

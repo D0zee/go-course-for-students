@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"homework8/internal/ads"
+	"log"
 
 	"net/http"
 	"strconv"
@@ -253,4 +254,30 @@ func getListAds(a app.App) gin.HandlerFunc {
 		}
 		c.JSON(http.StatusOK, AdListSuccessResponse(listAds))
 	}
+}
+
+func getAdsByTitle(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		listAds := a.ListAds(c)
+		log.Println("ALL ADS:", listAds)
+		var req getAdsByTitleRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		title := req.Title
+		log.Println("TITLE:", title)
+
+		var adsWithTitle []ads.Ad
+		for _, ad := range listAds {
+			if ad.Title == title {
+				adsWithTitle = append(adsWithTitle, ad)
+			}
+		}
+		log.Println("ADS:", adsWithTitle)
+
+		c.JSON(http.StatusOK, AdListSuccessResponse(adsWithTitle))
+	}
+
 }

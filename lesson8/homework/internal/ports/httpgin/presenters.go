@@ -58,6 +58,10 @@ type filterQueryRequest struct {
 	Time     time.Time `form:"time" time_format:"2006-01-02"`
 }
 
+type getAdsByTitleRequest struct {
+	Title string `json:"title"`
+}
+
 func AdSuccessResponse(ad ads.Ad) *gin.H {
 	return &gin.H{
 		"data": adResponse{

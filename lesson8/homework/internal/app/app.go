@@ -52,7 +52,7 @@ func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) 
 		return ads.Ad{}, ErrAccess
 	}
 
-	currentTime := time.Now()
+	currentTime := time.Now().UTC()
 	ad := ads.Ad{ID: a.Repo.GetCurAvailableId(), Title: title, Text: text,
 		AuthorID: userId, CreationTime: currentTime, UpdateTime: currentTime}
 	if err := advalidator.Validate(ad); err != nil {
@@ -86,7 +86,7 @@ func (a *AdApp) ChangeAdStatus(ctx context.Context, adId, userId int64, publishe
 		return ads.Ad{}, err
 	}
 	ad, _ := a.Repo.Get(adId)
-	ad.UpdateTime = time.Now()
+	ad.UpdateTime = time.Now().UTC()
 	ad.Published = published
 	return *ad, nil
 }
@@ -103,7 +103,7 @@ func (a *AdApp) UpdateAd(ctx context.Context, adId, userId int64, title, text st
 	newAd := *ad
 	newAd.Title = title
 	newAd.Text = text
-	newAd.UpdateTime = time.Now()
+	newAd.UpdateTime = time.Now().UTC()
 	if err := advalidator.Validate(newAd); err != nil {
 		return ads.Ad{}, ErrValidate
 	}
