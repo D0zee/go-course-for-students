@@ -4,15 +4,33 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
 	"homework9/internal/app"
 )
 
-func NewHTTPServer(port string, a app.App) *http.Server {
-	gin.SetMode(gin.ReleaseMode)
-	handler := gin.New()
-	s := &http.Server{Addr: port, Handler: handler}
+type Server struct {
+	port string
+	app  *gin.Engine
+}
 
-	// todo: add your own logic
+func NewHTTPServer(port string, a app.App) Server {
+	gin.SetMode(gin.ReleaseMode)
+	s := Server{port: port, app: gin.New()}
+	s.app.Use(gin.Logger())
+	s.app.Use(Recovery)
+	adsRoute := s.app.Group("/api/v1/ads")
+	adRouter(adsRoute, a)
+
+	userRoute := s.app.Group("api/v1/users")
+	userRouter(userRoute, a)
 
 	return s
+}
+
+func (s *Server) Listen() error {
+	return s.app.Run(s.port)
+}
+
+func (s *Server) Handler() http.Handler {
+	return s.app
 }
