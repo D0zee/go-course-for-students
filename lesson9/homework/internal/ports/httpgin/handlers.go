@@ -186,59 +186,6 @@ func removeAd(a app.App) gin.HandlerFunc {
 	}
 }
 
-// createUser - Method for creating user
-func createUser(a app.App) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req createUserRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse(err))
-			return
-		}
-
-		user, err := a.CreateUser(c, req.Nickname, req.Email)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
-			return
-		}
-
-		c.JSON(http.StatusOK, UserSuccessResponse(user))
-	}
-}
-
-// changeUser - Method for changing different fields of user structure
-func changeUser(a app.App, m app.Method) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req changeUserRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse(err))
-			return
-		}
-
-		if c.Param("id") == "" {
-			c.JSON(http.StatusBadRequest, ErrorResponse(ErrEmptyQueryParam))
-			return
-		}
-		id, err := strconv.Atoi(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse(err))
-			return
-		}
-
-		user, err := a.UpdateUser(c, int64(id), req.Data, m)
-
-		if err != nil {
-			if errors.Is(err, app.ErrWrongUserId) {
-				c.JSON(http.StatusBadRequest, ErrorResponse(err))
-				return
-			}
-			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
-			return
-		}
-
-		c.JSON(http.StatusOK, UserSuccessResponse(user))
-	}
-}
-
 type adPredicate func(ad ads.Ad) bool
 
 func filter(Ads []ads.Ad, p adPredicate) []ads.Ad {
@@ -313,6 +260,59 @@ func getAdsByTitle(a app.App) gin.HandlerFunc {
 		c.JSON(http.StatusOK, AdListSuccessResponse(adsWithTitle))
 	}
 
+}
+
+// createUser - Method for creating user
+func createUser(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req createUserRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		user, err := a.CreateUser(c, req.Nickname, req.Email)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, UserSuccessResponse(user))
+	}
+}
+
+// changeUser - Method for changing different fields of user structure
+func changeUser(a app.App, m app.Method) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req changeUserRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		if c.Param("id") == "" {
+			c.JSON(http.StatusBadRequest, ErrorResponse(ErrEmptyQueryParam))
+			return
+		}
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		user, err := a.UpdateUser(c, int64(id), req.Data, m)
+
+		if err != nil {
+			if errors.Is(err, app.ErrWrongUserId) {
+				c.JSON(http.StatusBadRequest, ErrorResponse(err))
+				return
+			}
+			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, UserSuccessResponse(user))
+	}
 }
 
 func removeUser(a app.App) gin.HandlerFunc {
