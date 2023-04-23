@@ -10,4 +10,6 @@ type Ad struct {
 	Published    bool
 	CreationTime time.Time
 	UpdateTime   time.Time
+
+	Deleted bool
 }

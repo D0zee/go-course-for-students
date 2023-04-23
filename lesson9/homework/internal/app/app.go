@@ -21,12 +21,15 @@ type App interface {
 	ChangeAdStatus(ctx context.Context, adId, userId int64, published bool) (ads.Ad, error)
 	UpdateAd(ctx context.Context, adId, userId int64, title, text string) (ads.Ad, error)
 	GetAdById(ctx context.Context, adId, userId int64) (ads.Ad, error)
+	RemoveAd(ctx context.Context, adId, userId int64) (ads.Ad, error)
 	access(adId, userId int64) error
 
 	ListAds(ctx context.Context) []ads.Ad
 
 	CreateUser(ctx context.Context, nickname, email string) (users.User, error)
 	UpdateUser(ctx context.Context, userId int64, nickname string, m Method) (users.User, error)
+	RemoveUser(ctx context.Context, userId int64) (users.User, error)
+	GetUser(ctx context.Context, userId int64) (users.User, error)
 }
 
 func contextEnd(ctx context.Context) bool {
@@ -122,6 +125,21 @@ func (a *AdApp) GetAdById(ctx context.Context, adId, userId int64) (ads.Ad, erro
 	return *ad, nil
 }
 
+func (a *AdApp) RemoveAd(ctx context.Context, adId, userId int64) (ads.Ad, error) {
+	if contextEnd(ctx) {
+		return ads.Ad{}, ErrInternal
+	}
+	if err := a.access(adId, userId); err != nil {
+		return ads.Ad{}, err
+	}
+	ad, _ := a.Repo.Get(adId)
+	if ad.Deleted {
+		return ads.Ad{}, ErrWrongUserId
+	}
+	ad.Deleted = true
+	return *ad, nil
+}
+
 func (a *AdApp) ListAds(ctx context.Context) []ads.Ad {
 	select {
 	case <-ctx.Done():
@@ -167,6 +185,29 @@ func (a *AdApp) UpdateUser(ctx context.Context, userId int64, data string, m Met
 		user.Nickname = data
 	} else {
 		panic(m)
+	}
+	return *user, nil
+}
+
+func (a *AdApp) RemoveUser(ctx context.Context, userId int64) (users.User, error) {
+	if contextEnd(ctx) {
+		return users.User{}, ErrInternal
+	}
+	user, contain := a.UserRepo.Get(userId)
+	if !contain || user.Deleted {
+		return users.User{}, ErrWrongUserId
+	}
+	user.Deleted = true
+	return *user, nil
+}
+
+func (a *AdApp) GetUser(ctx context.Context, userId int64) (users.User, error) {
+	if contextEnd(ctx) {
+		return users.User{}, ErrInternal
+	}
+	user, contain := a.UserRepo.Get(userId)
+	if !contain || user.Deleted {
+		return users.User{}, ErrWrongUserId
 	}
 	return *user, nil
 }
