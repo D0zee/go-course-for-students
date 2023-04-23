@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -116,7 +115,31 @@ func (tc *testClient) createAd(userID int64, title string, text string) (adRespo
 	if err != nil {
 		return adResponse{}, err
 	}
-	log.Println("LOG:", response)
+	return response, nil
+}
+
+func (tc *testClient) removeAd(adId, userID int64) (adResponse, error) {
+	body := map[string]any{
+		"user_id": userID,
+	}
+
+	data, err := json.Marshal(body)
+	if err != nil {
+		return adResponse{}, fmt.Errorf("unable to marshal: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, tc.baseURL+"/api/v1/ads/"+fmt.Sprintf("%d", adId), bytes.NewReader(data))
+	if err != nil {
+		return adResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	var response adResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return adResponse{}, err
+	}
 	return response, nil
 }
 
@@ -255,6 +278,38 @@ func (tc *testClient) updateUser(id int64, field, fieldData string) (userRespons
 	}
 
 	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf(tc.baseURL+"/api/v1/users/%d/"+field, id), bytes.NewReader(data))
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	var response userResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return userResponse{}, err
+	}
+	return response, nil
+}
+
+func (tc *testClient) getUser(id int64) (userResponse, error) {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf(tc.baseURL+"/api/v1/users/%d/", id), nil)
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	var response userResponse
+	err = tc.getResponse(req, &response)
+	if err != nil {
+		return userResponse{}, err
+	}
+	return response, nil
+}
+
+func (tc *testClient) removeUser(id int64) (userResponse, error) {
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf(tc.baseURL+"/api/v1/users/%d/", id), nil)
 	if err != nil {
 		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
 	}

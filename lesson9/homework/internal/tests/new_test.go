@@ -112,10 +112,10 @@ func TestAdsByTitle(t *testing.T) {
 	assert.NoError(t, err)
 	userId2 := uResponse.Data.ID
 
-	ad1, err := client.createAd(userId1, "hello", "world")
+	ad1, err := client.createAd(userId1, "hello1", "world")
 	assert.NoError(t, err)
 
-	ad2, err := client.createAd(userId2, "hello", "Hello spectators!")
+	ad2, err := client.createAd(userId2, "hello2", "Hello spectators!")
 	assert.NoError(t, err)
 
 	ad3, err := client.createAd(userId2, "go is cool", "Hello spectators!")
@@ -133,4 +133,40 @@ func TestAdsByTitle(t *testing.T) {
 	assert.Len(t, ad_.Data, 1)
 	equalityOfAds(t, ad_.Data[0], ad3)
 
+}
+
+func TestRemoveAd(t *testing.T) {
+	client := getTestClient()
+
+	uResponse, err := client.createUser("Oleg", "ya@ya.ru")
+	assert.NoError(t, err)
+	userId := uResponse.Data.ID
+
+	adOriginal, err := client.createAd(userId, "hello1", "world")
+	assert.NoError(t, err)
+
+	// wrong user id
+	_, err = client.removeAd(adOriginal.Data.ID, -1)
+	assert.Error(t, err, app.ErrAccess)
+
+	// wrong ad id
+	_, err = client.removeAd(-1, userId)
+	assert.Error(t, err, app.ErrAvailabilityAd)
+
+	// ad is available
+	ad, err := client.getAd(adOriginal.Data.ID, userId)
+	assert.NoError(t, err)
+	assert.Equal(t, ad, adOriginal)
+
+	adRemoved, err := client.removeAd(adOriginal.Data.ID, userId)
+	assert.NoError(t, err)
+	assert.Equal(t, adRemoved, adOriginal)
+
+	// get error if you want to get removed ad
+	_, err = client.getAd(adOriginal.Data.ID, userId)
+	assert.Error(t, err, app.ErrAvailabilityAd)
+
+	// get error if we want to remove again
+	_, err = client.removeAd(adOriginal.Data.ID, userId)
+	assert.Error(t, err, app.ErrAvailabilityAd)
 }
