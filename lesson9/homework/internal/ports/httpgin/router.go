@@ -15,10 +15,15 @@ func adRouter(r *gin.RouterGroup, a app.App) {
 	r.GET("/", getListAds(a))
 
 	r.GET("/title", getAdsByTitle(a))
+	r.DELETE("/:id", removeAd(a))
 }
 
 func userRouter(r *gin.RouterGroup, a app.App) {
-	r.POST("/", CreateUser(a))
-	r.PUT("/:id/nickname", ChangeUser(a, app.ChangeNickname))
-	r.PUT("/:id/email", ChangeUser(a, app.ChangeEmail))
+	r.POST("/", createUser(a))
+	r.PUT("/:id/nickname", changeUser(a, app.ChangeNickname))
+	r.PUT("/:id/email", changeUser(a, app.ChangeEmail))
+
+	r.GET("/:id", getUser(a))
+	r.DELETE("/:id", removeUser(a))
+
 }

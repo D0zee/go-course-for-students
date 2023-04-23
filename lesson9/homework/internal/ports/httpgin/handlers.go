@@ -4,10 +4,9 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"homework9/internal/ads"
-	"log"
-
 	"net/http"
 	"strconv"
+	"strings"
 
 	"homework9/internal/app"
 )
@@ -150,8 +149,45 @@ func getAd(a app.App) gin.HandlerFunc {
 	}
 }
 
-// CreateUser - Method for creating user
-func CreateUser(a app.App) gin.HandlerFunc {
+func removeAd(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Param("id") == "" {
+			c.JSON(http.StatusBadRequest, ErrorResponse(ErrEmptyQueryParam))
+			return
+		}
+
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		var req getAdRequest
+		if err = c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		ad, err := a.RemoveAd(c, int64(id), req.UserID)
+		if err != nil {
+			if errors.Is(err, app.ErrAccess) {
+				c.JSON(http.StatusForbidden, ErrorResponse(err))
+				return
+			}
+			if errors.Is(err, app.ErrWrongUserId) {
+				c.JSON(http.StatusForbidden, ErrorResponse(err))
+				return
+			}
+			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, AdSuccessResponse(ad))
+	}
+}
+
+// createUser - Method for creating user
+func createUser(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req createUserRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -169,8 +205,8 @@ func CreateUser(a app.App) gin.HandlerFunc {
 	}
 }
 
-// ChangeUser - Method for changing different fields of user structure
-func ChangeUser(a app.App, m app.Method) gin.HandlerFunc {
+// changeUser - Method for changing different fields of user structure
+func changeUser(a app.App, m app.Method) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req changeUserRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -259,7 +295,6 @@ func getListAds(a app.App) gin.HandlerFunc {
 func getAdsByTitle(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		listAds := a.ListAds(c)
-		log.Println("ALL ADS:", listAds)
 		var req getAdsByTitleRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse(err))
@@ -267,17 +302,69 @@ func getAdsByTitle(a app.App) gin.HandlerFunc {
 		}
 
 		title := req.Title
-		log.Println("TITLE:", title)
 
 		var adsWithTitle []ads.Ad
 		for _, ad := range listAds {
-			if ad.Title == title {
+			if strings.HasPrefix(ad.Title, title) {
 				adsWithTitle = append(adsWithTitle, ad)
 			}
 		}
-		log.Println("ADS:", adsWithTitle)
 
 		c.JSON(http.StatusOK, AdListSuccessResponse(adsWithTitle))
 	}
 
+}
+
+func removeUser(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Param("id") == "" {
+			c.JSON(http.StatusBadRequest, ErrorResponse(ErrEmptyQueryParam))
+			return
+		}
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		user, err := a.RemoveUser(c, int64(id))
+
+		if err != nil {
+			if errors.Is(err, app.ErrWrongUserId) {
+				c.JSON(http.StatusBadRequest, ErrorResponse(err))
+				return
+			}
+			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, UserSuccessResponse(user))
+	}
+}
+
+func getUser(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Param("id") == "" {
+			c.JSON(http.StatusBadRequest, ErrorResponse(ErrEmptyQueryParam))
+			return
+		}
+
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, ErrorResponse(err))
+			return
+		}
+
+		user, err := a.GetUser(c, int64(id))
+		if err != nil {
+			if errors.Is(err, app.ErrWrongUserId) {
+				c.JSON(http.StatusBadRequest, ErrorResponse(err))
+				return
+			}
+			c.JSON(http.StatusInternalServerError, ErrorResponse(err))
+			return
+		}
+
+		c.JSON(http.StatusOK, UserSuccessResponse(user))
+	}
 }
