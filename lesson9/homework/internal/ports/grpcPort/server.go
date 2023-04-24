@@ -1,12 +1,12 @@
-package grpc
+package grpcPort
 
 import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
 	"homework9/internal/app"
-	"homework9/internal/ports/grpc/proto"
-	"homework9/internal/ports/grpc/service"
+	"homework9/internal/ports/grpcPort/proto"
+	"homework9/internal/ports/grpcPort/service"
 	"log"
 	"net"
 )

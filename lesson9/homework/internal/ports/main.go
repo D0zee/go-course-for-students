@@ -6,7 +6,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"homework9/internal/adapters/adrepo"
 	"homework9/internal/app"
-	"homework9/internal/ports/grpc"
+	grpc "homework9/internal/ports/grpcPort"
 	"homework9/internal/ports/httpgin"
 	"log"
 	"os"

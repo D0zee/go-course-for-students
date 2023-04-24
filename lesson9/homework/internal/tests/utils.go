@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
-	"homework9/internal/ports/grpc/proto"
-	grpcPort "homework9/internal/ports/grpc/service"
+	grpcLocal "homework9/internal/ports/grpcPort"
+	"homework9/internal/ports/grpcPort/proto"
+	grpcPort "homework9/internal/ports/grpcPort/service"
 	"io"
 	"net"
 	"net/http"
@@ -77,7 +79,8 @@ func getGrpcClient(t *testing.T) (proto.AdServiceClient, context.Context) {
 		lis.Close()
 	})
 
-	srv := grpc.NewServer()
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcLocal.LoggerInterceptor),
+		grpc.ChainUnaryInterceptor(grpcLocal.PanicRecovery))
 	t.Cleanup(func() {
 		srv.Stop()
 	})
@@ -98,7 +101,7 @@ func getGrpcClient(t *testing.T) (proto.AdServiceClient, context.Context) {
 		cancel()
 	})
 
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err, "grpc.DialContext")
 
 	t.Cleanup(func() {

@@ -3,7 +3,7 @@ package service
 import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"homework9/internal/ads"
-	"homework9/internal/ports/grpc/proto"
+	"homework9/internal/ports/grpcPort/proto"
 	"homework9/internal/users"
 )
 

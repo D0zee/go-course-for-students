@@ -5,7 +5,7 @@ import (
 	"errors"
 	"homework9/internal/ads"
 	"homework9/internal/app"
-	"homework9/internal/ports/grpc/proto"
+	"homework9/internal/ports/grpcPort/proto"
 	"homework9/internal/users"
 	"strings"
 )

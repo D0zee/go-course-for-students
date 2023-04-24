@@ -5,7 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"homework9/internal/app"
-	"homework9/internal/ports/grpc/proto"
+	"homework9/internal/ports/grpcPort/proto"
 	"testing"
 	"time"
 )
@@ -55,6 +55,7 @@ func TestChangeAdStatusGrpc(t *testing.T) {
 		UserId: user.Id,
 	}
 	ad, err := client.CreateAd(ctx, request)
+	assert.NoError(t, err)
 
 	response, err := client.ChangeAdStatus(ctx, &proto.ChangeAdStatusRequest{
 		AdId:      ad.Id,
@@ -66,7 +67,7 @@ func TestChangeAdStatusGrpc(t *testing.T) {
 	assert.True(t, isSameDate(response.UpdateTime.AsTime(), time.Now()))
 
 	// error when try to change ad status from another user
-	response, err = client.ChangeAdStatus(ctx, &proto.ChangeAdStatusRequest{
+	_, err = client.ChangeAdStatus(ctx, &proto.ChangeAdStatusRequest{
 		AdId:      ad.Id,
 		UserId:    user2.Id,
 		Published: true,
@@ -89,6 +90,7 @@ func TestUpdateAdGrpc(t *testing.T) {
 		UserId: user.Id,
 	}
 	ad, err := client.CreateAd(ctx, request)
+	assert.NoError(t, err)
 
 	response, err := client.UpdateAd(ctx, &proto.UpdateAdRequest{
 		AdId:   ad.Id,
@@ -102,7 +104,7 @@ func TestUpdateAdGrpc(t *testing.T) {
 	assert.True(t, isSameDate(response.UpdateTime.AsTime(), time.Now()))
 
 	// error when try to change ad status from another user
-	response, err = client.UpdateAd(ctx, &proto.UpdateAdRequest{
+	_, err = client.UpdateAd(ctx, &proto.UpdateAdRequest{
 		AdId:   ad.Id,
 		UserId: user2.Id,
 	})
@@ -339,7 +341,7 @@ func TestChangeUserGrpc(t *testing.T) {
 	assert.Equal(t, updatedUser.Email, newEmail)
 
 	//wrong ID
-	updatedUser, err = client.ChangeUser(ctx, &proto.ChangeUserRequest{
+	_, err = client.ChangeUser(ctx, &proto.ChangeUserRequest{
 		Id:       1000,
 		Nickname: nil,
 		Email:    &newEmail,
