@@ -122,7 +122,7 @@ func (s *Service) AdsByTitle(ctx context.Context, request *proto.AdsByTitleReque
 			adsWithTitle = append(adsWithTitle, ad)
 		}
 	}
-	return ListAdSuccessResponse(listAds), nil
+	return ListAdSuccessResponse(adsWithTitle), nil
 }
 
 func (s *Service) CreateUser(ctx context.Context, request *proto.CreateUserRequest) (*proto.UserResponse, error) {
@@ -155,7 +155,7 @@ func (s *Service) ChangeUser(ctx context.Context, request *proto.ChangeUserReque
 	}
 
 	if request.Nickname != nil {
-		if user, err = s.App.UpdateUser(ctx, request.Id, *request.Email, app.ChangeEmail); err != nil {
+		if user, err = s.App.UpdateUser(ctx, request.Id, *request.Nickname, app.ChangeNickname); err != nil {
 			return nil, err
 		}
 	}

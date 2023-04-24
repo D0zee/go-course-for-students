@@ -20,12 +20,11 @@ func AdSuccessResponse(ad ads.Ad) *proto.AdResponse {
 }
 
 func ListAdSuccessResponse(ads []ads.Ad) *proto.ListAdResponse {
-	var response proto.ListAdResponse
-	list := response.GetList()
+	var list []*proto.AdResponse
 	for _, ad := range ads {
 		list = append(list, AdSuccessResponse(ad))
 	}
-	return &response
+	return &proto.ListAdResponse{List: list}
 }
 
 func UserSuccessResponse(user users.User) *proto.UserResponse {

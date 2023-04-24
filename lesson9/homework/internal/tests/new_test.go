@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"homework9/internal/app"
 	"net/url"
@@ -20,16 +19,12 @@ func TestGetAd(t *testing.T) {
 
 	userId := uResponse.Data.ID
 
-	_, err = client.createAd(userId, "hello", "world")
+	ad, err := client.createAd(userId, "hello", "world")
 	assert.NoError(t, err)
 
 	response, err := client.getAd(0, userId)
 	assert.NoError(t, err)
-	assert.Zero(t, response.Data.ID)
-	assert.Equal(t, response.Data.Title, "hello")
-	assert.Equal(t, response.Data.Text, "world")
-	assert.Equal(t, response.Data.AuthorID, userId)
-	assert.False(t, response.Data.Published)
+	assert.Equal(t, response, ad)
 
 	// ad with this id isn't
 	_, err = client.getAd(1, userId)
@@ -90,9 +85,6 @@ func TestListAdsFilter(t *testing.T) {
 	queryString = v.Encode()
 
 	ads, err = client.listAds(queryString)
-	fmt.Println()
-	fmt.Println()
-
 	assert.NoError(t, err)
 	assert.Len(t, ads.Data, 3)
 	equalityOfAds(t, ads.Data[0], ad1)
