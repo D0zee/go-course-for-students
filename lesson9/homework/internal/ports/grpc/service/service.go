@@ -21,7 +21,7 @@ func NewService(app app.App) *Service {
 }
 
 func (s *Service) CreateAd(ctx context.Context, request *proto.CreateAdRequest) (*proto.AdResponse, error) {
-	ad, err := s.App.CreateAd(ctx, request.Title, request.Title, request.UserId)
+	ad, err := s.App.CreateAd(ctx, request.Title, request.Text, request.UserId)
 	if err != nil {
 		return nil, err
 	}

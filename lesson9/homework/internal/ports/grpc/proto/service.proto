@@ -31,6 +31,9 @@ message AdResponse {
   string text = 3;
   int64 author_id = 4;
   bool published = 5;
+
+  google.protobuf.Timestamp creation_time = 6;
+  google.protobuf.Timestamp update_time = 7;
 }
 
 message ChangeAdStatusRequest {
