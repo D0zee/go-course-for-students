@@ -1,64 +1,63 @@
-package grpc
+package service
 
 import (
 	"context"
 	"errors"
 	"homework9/internal/ads"
 	"homework9/internal/app"
-	"homework9/internal/ports/grpc/service"
+	"homework9/internal/ports/grpc/proto"
 	"homework9/internal/users"
 	"strings"
 )
 
-var ErrCtx = errors.New("problems with ctx")
 var ErrEmptyReq = errors.New("empty request")
 
-type ServiceImpl struct {
+type Service struct {
 	App app.App
 }
 
-func NewService(app app.App) *ServiceImpl {
-	return &ServiceImpl{App: app}
+func NewService(app app.App) *Service {
+	return &Service{App: app}
 }
 
-func (s *ServiceImpl) CreateAd(ctx context.Context, request *service.CreateAdRequest) (*service.AdResponse, error) {
+func (s *Service) CreateAd(ctx context.Context, request *proto.CreateAdRequest) (*proto.AdResponse, error) {
 	ad, err := s.App.CreateAd(ctx, request.Title, request.Title, request.UserId)
 	if err != nil {
 		return nil, err
 	}
-	return AdResponse(ad), nil
+	return AdSuccessResponse(ad), nil
 }
 
-func (s *ServiceImpl) ChangeAdStatus(ctx context.Context, request *service.ChangeAdStatusRequest) (*service.AdResponse, error) {
+func (s *Service) ChangeAdStatus(ctx context.Context, request *proto.ChangeAdStatusRequest) (*proto.AdResponse, error) {
 	ad, err := s.App.ChangeAdStatus(ctx, request.AdId, request.UserId, request.Published)
 	if err != nil {
 		return nil, err
 	}
-	return AdResponse(ad), nil
+	return AdSuccessResponse(ad), nil
 }
 
-func (s *ServiceImpl) UpdateAd(ctx context.Context, request *service.UpdateAdRequest) (*service.AdResponse, error) {
+func (s *Service) UpdateAd(ctx context.Context, request *proto.UpdateAdRequest) (*proto.AdResponse, error) {
 	ad, err := s.App.UpdateAd(ctx, request.AdId, request.UserId, request.Title, request.Text)
 	if err != nil {
 		return nil, err
 	}
-	return AdResponse(ad), nil
+	return AdSuccessResponse(ad), nil
 }
 
-func (s *ServiceImpl) GetAd(ctx context.Context, request *service.GetAdRequest) (*service.AdResponse, error) {
+func (s *Service) GetAd(ctx context.Context, request *proto.GetAdRequest) (*proto.AdResponse, error) {
 	ad, err := s.App.GetAdById(ctx, request.AdId, request.UserId)
 	if err != nil {
 		return nil, err
 	}
-	return AdResponse(ad), nil
+	return AdSuccessResponse(ad), nil
 }
 
-func (s *ServiceImpl) DeleteAd(ctx context.Context, request *service.DeleteAdRequest) (*service.AdResponse, error) {
+func (s *Service) DeleteAd(ctx context.Context, request *proto.DeleteAdRequest) (*proto.AdResponse, error) {
 	ad, err := s.App.RemoveAd(ctx, request.AdId, request.UserId)
 	if err != nil {
 		return nil, err
 	}
-	return AdResponse(ad), nil
+	return AdSuccessResponse(ad), nil
 }
 
 type adPredicate func(ad ads.Ad) bool
@@ -85,7 +84,7 @@ func filter(Ads []ads.Ad, p adPredicates) []ads.Ad {
 	return result
 }
 
-func (s *ServiceImpl) ListAds(ctx context.Context, request *service.ListAdRequest) (*service.ListAdResponse, error) {
+func (s *Service) ListAds(ctx context.Context, request *proto.ListAdRequest) (*proto.ListAdResponse, error) {
 	var filterFunc adPredicates
 	listAds := s.App.ListAds(ctx)
 	if request.Time != nil {
@@ -110,10 +109,10 @@ func (s *ServiceImpl) ListAds(ctx context.Context, request *service.ListAdReques
 		})
 	}
 	listAds = filter(listAds, filterFunc)
-	return ListAdResponse(listAds), nil
+	return ListAdSuccessResponse(listAds), nil
 }
 
-func (s *ServiceImpl) AdsByTitle(ctx context.Context, request *service.AdsByTitleRequest) (*service.ListAdResponse, error) {
+func (s *Service) AdsByTitle(ctx context.Context, request *proto.AdsByTitleRequest) (*proto.ListAdResponse, error) {
 	listAds := s.App.ListAds(ctx)
 	title := request.Title
 
@@ -123,26 +122,26 @@ func (s *ServiceImpl) AdsByTitle(ctx context.Context, request *service.AdsByTitl
 			adsWithTitle = append(adsWithTitle, ad)
 		}
 	}
-	return ListAdResponse(listAds), nil
+	return ListAdSuccessResponse(listAds), nil
 }
 
-func (s *ServiceImpl) CreateUser(ctx context.Context, request *service.CreateUserRequest) (*service.UserResponse, error) {
+func (s *Service) CreateUser(ctx context.Context, request *proto.CreateUserRequest) (*proto.UserResponse, error) {
 	user, err := s.App.CreateUser(ctx, request.Name, request.Email)
 	if err != nil {
 		return nil, err
 	}
-	return UserResponse(user), nil
+	return UserSuccessResponse(user), nil
 }
 
-func (s *ServiceImpl) GetUser(ctx context.Context, request *service.GetUserRequest) (*service.UserResponse, error) {
+func (s *Service) GetUser(ctx context.Context, request *proto.GetUserRequest) (*proto.UserResponse, error) {
 	user, err := s.App.GetUser(ctx, request.Id)
 	if err != nil {
 		return nil, err
 	}
-	return UserResponse(user), nil
+	return UserSuccessResponse(user), nil
 }
 
-func (s *ServiceImpl) ChangeUser(ctx context.Context, request *service.ChangeUserRequest) (*service.UserResponse, error) {
+func (s *Service) ChangeUser(ctx context.Context, request *proto.ChangeUserRequest) (*proto.UserResponse, error) {
 	if request.Email == nil && request.Nickname == nil {
 		return nil, ErrEmptyReq
 	}
@@ -161,13 +160,13 @@ func (s *ServiceImpl) ChangeUser(ctx context.Context, request *service.ChangeUse
 		}
 	}
 
-	return UserResponse(user), nil
+	return UserSuccessResponse(user), nil
 }
 
-func (s *ServiceImpl) DeleteUser(ctx context.Context, request *service.DeleteUserRequest) (*service.UserResponse, error) {
+func (s *Service) DeleteUser(ctx context.Context, request *proto.DeleteUserRequest) (*proto.UserResponse, error) {
 	user, err := s.App.RemoveUser(ctx, request.Id)
 	if err != nil {
 		return nil, err
 	}
-	return UserResponse(user), nil
+	return UserSuccessResponse(user), nil
 }
