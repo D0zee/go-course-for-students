@@ -5,18 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/test/bufconn"
-	grpcLocal "homework9/internal/ports/grpcPort"
-	"homework9/internal/ports/grpcPort/proto"
-	grpcPort "homework9/internal/ports/grpcPort/service"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
-	"testing"
 	"time"
 
 	"homework9/internal/adapters/repo"
@@ -71,44 +62,6 @@ func getTestClient() *testClient {
 		client:  testServer.Client(),
 		baseURL: testServer.URL,
 	}
-}
-
-func getGrpcClient(t *testing.T) (proto.AdServiceClient, context.Context) {
-	lis := bufconn.Listen(1024 * 1024)
-	t.Cleanup(func() {
-		lis.Close()
-	})
-
-	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(grpcLocal.LoggerInterceptor),
-		grpc.ChainUnaryInterceptor(grpcLocal.PanicRecovery))
-	t.Cleanup(func() {
-		srv.Stop()
-	})
-
-	svc := grpcPort.NewService(app.NewApp(repo.NewMapAdRepo(), repo.NewUserRepo()))
-	proto.RegisterAdServiceServer(srv, svc)
-
-	go func() {
-		assert.NoError(t, srv.Serve(lis), "srv.Serve")
-	}()
-
-	dialer := func(context.Context, string) (net.Conn, error) {
-		return lis.Dial()
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	t.Cleanup(func() {
-		cancel()
-	})
-
-	conn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(dialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	assert.NoError(t, err, "grpc.DialContext")
-
-	t.Cleanup(func() {
-		conn.Close()
-	})
-
-	return proto.NewAdServiceClient(conn), ctx
 }
 
 func (tc *testClient) getResponse(req *http.Request, out any) error {

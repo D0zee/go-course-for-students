@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"github.com/stretchr/testify/suite"
 	"homework9/internal/adapters/repo"
 	"homework9/internal/ads"
@@ -163,11 +164,14 @@ func (s *adSuite) TestAdCreate() {
 		Text:         s.dftText,
 		AuthorID:     s.dftUser.Id,
 		Published:    false,
-		CreationTime: time.Now(),
-		UpdateTime:   time.Now(),
+		CreationTime: time.Now().UTC(),
+		UpdateTime:   time.Now().UTC(),
 	}
 
 	ad, err := s.app.CreateAd(s.ctx, s.dftTitle, s.dftText, s.dftUser.Id)
+	fmt.Println(ad)
+
+	fmt.Println(expAd)
 	s.Nil(err)
 	isSameAd(ad, expAd)
 

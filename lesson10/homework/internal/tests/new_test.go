@@ -79,7 +79,7 @@ func TestListAdsFilter(t *testing.T) {
 	equalityOfAds(t, ads.Data[1], ad2)
 
 	v = url.Values{}
-	currentTime := time.Now()
+	currentTime := time.Now().UTC()
 	dateStr := currentTime.Format(time.DateOnly)
 	v.Add("time", dateStr)
 	queryString = v.Encode()

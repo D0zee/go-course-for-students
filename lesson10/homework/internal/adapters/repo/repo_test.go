@@ -6,30 +6,42 @@ import (
 	"testing"
 )
 
+type TestCase struct {
+	repo Repository[ads.Ad]
+}
+
 func TestRepo(t *testing.T) {
-	repo := NewMapAdRepo()
-	assert.NotNil(t, repo)
-
-	// test only adRepo implementation because Repository is template struct
-
-	userRepo := NewUserRepo()
-	assert.NotNil(t, userRepo)
-
-	id := repo.GetCurAvailableId()
-	assert.Zero(t, id)
-
-	ad := ads.Ad{
-		ID:    id,
-		Title: "Hello",
-		Text:  "world",
+	testCases := []TestCase{
+		{NewMapAdRepo()},
+		{NewSliceAdRepo()},
 	}
 
-	repo.Insert(&ad)
-	adFromRepo, contain := repo.Get(0)
-	assert.True(t, contain)
-	assert.Equal(t, *adFromRepo, ad)
+	for _, test := range testCases {
+		repo := test.repo
+		assert.NotNil(t, repo)
 
-	adFromRepo, contain = repo.Get(1)
-	assert.False(t, contain)
-	assert.Nil(t, adFromRepo)
+		// test only adRepo implementation because Repository is template struct
+
+		userRepo := NewUserRepo()
+		assert.NotNil(t, userRepo)
+
+		id := repo.GetCurAvailableId()
+		assert.Zero(t, id)
+
+		ad := ads.Ad{
+			ID:    id,
+			Title: "Hello",
+			Text:  "world",
+		}
+
+		repo.Insert(&ad)
+		adFromRepo, contain := repo.Get(0)
+		assert.True(t, contain)
+		assert.Equal(t, *adFromRepo, ad)
+
+		adFromRepo, contain = repo.Get(1)
+		assert.False(t, contain)
+		assert.Nil(t, adFromRepo)
+	}
+
 }

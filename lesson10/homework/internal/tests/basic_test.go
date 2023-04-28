@@ -24,8 +24,8 @@ func TestCreateAd(t *testing.T) {
 	assert.Equal(t, response.Data.Text, "world")
 	assert.Equal(t, response.Data.AuthorID, int64(0))
 	assert.False(t, response.Data.Published)
-	assert.True(t, isSameDate(response.Data.CreationTime, time.Now()))
-	assert.True(t, isSameDate(response.Data.UpdateTime, time.Now()))
+	assert.True(t, isSameDate(response.Data.CreationTime, time.Now().UTC()))
+	assert.True(t, isSameDate(response.Data.UpdateTime, time.Now().UTC()))
 }
 
 func TestChangeAdStatus(t *testing.T) {
@@ -41,12 +41,12 @@ func TestChangeAdStatus(t *testing.T) {
 	response, err = client.changeAdStatus(userId, response.Data.ID, true)
 	assert.NoError(t, err)
 	assert.True(t, response.Data.Published)
-	assert.True(t, isSameDate(response.Data.UpdateTime, time.Now()))
+	assert.True(t, isSameDate(response.Data.UpdateTime, time.Now().UTC()))
 
 	response, err = client.changeAdStatus(userId, response.Data.ID, false)
 	assert.NoError(t, err)
 	assert.False(t, response.Data.Published)
-	assert.True(t, isSameDate(response.Data.UpdateTime, time.Now()))
+	assert.True(t, isSameDate(response.Data.UpdateTime, time.Now().UTC()))
 
 	response, err = client.changeAdStatus(userId, response.Data.ID, false)
 	assert.NoError(t, err)
@@ -68,7 +68,7 @@ func TestUpdateAd(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, response.Data.Title, "привет")
 	assert.Equal(t, response.Data.Text, "мир")
-	assert.True(t, isSameDate(response.Data.UpdateTime, time.Now()))
+	assert.True(t, isSameDate(response.Data.UpdateTime, time.Now().UTC()))
 }
 
 func TestListAds(t *testing.T) {

@@ -5,20 +5,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"homework9/internal/app"
+	"homework9/internal/ports/grpcPort"
 	"homework9/internal/ports/grpcPort/proto"
 	"testing"
 	"time"
 )
 
 func TestGRRPCCreateUser(t *testing.T) {
-	client, ctx := getGrpcClient(t)
+	client, ctx := grpcPort.GetGrpcClient(t)
 	res, err := client.CreateUser(ctx, &proto.CreateUserRequest{Name: "Oleg"})
 	assert.NoError(t, err, "client.GetUser")
 	assert.Equal(t, "Oleg", res.Name)
 }
 
 func TestCreateAdGrpc(t *testing.T) {
-	client, ctx := getGrpcClient(t)
+	client, ctx := grpcPort.GetGrpcClient(t)
 
 	uResponse, err := client.CreateUser(ctx, &proto.CreateUserRequest{Name: "Oleg", Email: "ya@ya.ru"})
 	assert.NoError(t, err)
@@ -36,12 +37,12 @@ func TestCreateAdGrpc(t *testing.T) {
 	assert.Equal(t, response.Text, "world")
 	assert.Equal(t, response.AuthorId, int64(0))
 	assert.False(t, response.Published)
-	assert.True(t, isSameDate(response.CreationTime.AsTime(), time.Now()))
-	assert.True(t, isSameDate(response.UpdateTime.AsTime(), time.Now()))
+	assert.True(t, isSameDate(response.CreationTime.AsTime(), time.Now().UTC()))
+	assert.True(t, isSameDate(response.UpdateTime.AsTime(), time.Now().UTC()))
 }
 
 func TestChangeAdStatusGrpc(t *testing.T) {
-	client, ctx := getGrpcClient(t)
+	client, ctx := grpcPort.GetGrpcClient(t)
 
 	user, err := client.CreateUser(ctx, &proto.CreateUserRequest{Name: "Oleg", Email: "ya@ya.ru"})
 	assert.NoError(t, err)
@@ -64,7 +65,7 @@ func TestChangeAdStatusGrpc(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.True(t, response.Published)
-	assert.True(t, isSameDate(response.UpdateTime.AsTime(), time.Now()))
+	assert.True(t, isSameDate(response.UpdateTime.AsTime(), time.Now().UTC()))
 
 	// error when try to change ad status from another user
 	_, err = client.ChangeAdStatus(ctx, &proto.ChangeAdStatusRequest{
@@ -76,7 +77,7 @@ func TestChangeAdStatusGrpc(t *testing.T) {
 }
 
 func TestUpdateAdGrpc(t *testing.T) {
-	client, ctx := getGrpcClient(t)
+	client, ctx := grpcPort.GetGrpcClient(t)
 
 	user, err := client.CreateUser(ctx, &proto.CreateUserRequest{Name: "Oleg", Email: "ya@ya.ru"})
 	assert.NoError(t, err)
@@ -101,7 +102,7 @@ func TestUpdateAdGrpc(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, response.Title, "not hello")
 	assert.Equal(t, response.Text, "not world")
-	assert.True(t, isSameDate(response.UpdateTime.AsTime(), time.Now()))
+	assert.True(t, isSameDate(response.UpdateTime.AsTime(), time.Now().UTC()))
 
 	// error when try to change ad status from another user
 	_, err = client.UpdateAd(ctx, &proto.UpdateAdRequest{
@@ -112,7 +113,7 @@ func TestUpdateAdGrpc(t *testing.T) {
 }
 
 func TestGetAdGrpc(t *testing.T) {
-	client, ctx := getGrpcClient(t)
+	client, ctx := grpcPort.GetGrpcClient(t)
 
 	user, err := client.CreateUser(ctx, &proto.CreateUserRequest{Name: "Oleg", Email: "ya@ya.ru"})
 	assert.NoError(t, err)
@@ -151,7 +152,7 @@ func TestGetAdGrpc(t *testing.T) {
 }
 
 func TestDeleteAdGrpc(t *testing.T) {
-	client, ctx := getGrpcClient(t)
+	client, ctx := grpcPort.GetGrpcClient(t)
 
 	user, err := client.CreateUser(ctx, &proto.CreateUserRequest{Name: "Oleg", Email: "ya@ya.ru"})
 	assert.NoError(t, err)
@@ -216,7 +217,7 @@ func isSameAd(t *testing.T, ad1, ad2 *proto.AdResponse) {
 }
 
 func TestListAdsFilterGrpc(t *testing.T) {
-	client, ctx := getGrpcClient(t)
+	client, ctx := grpcPort.GetGrpcClient(t)
 
 	user, err := client.CreateUser(ctx, &proto.CreateUserRequest{Name: "Oleg", Email: "ya@ya.ru"})
 	assert.NoError(t, err)
@@ -271,7 +272,7 @@ func TestListAdsFilterGrpc(t *testing.T) {
 }
 
 func TestAdsByTitleGrpc(t *testing.T) {
-	client, ctx := getGrpcClient(t)
+	client, ctx := grpcPort.GetGrpcClient(t)
 
 	user, err := client.CreateUser(ctx, &proto.CreateUserRequest{Name: "Oleg", Email: "ya@ya.ru"})
 	assert.NoError(t, err)
@@ -313,7 +314,7 @@ func TestAdsByTitleGrpc(t *testing.T) {
 }
 
 func TestChangeUserGrpc(t *testing.T) {
-	client, ctx := getGrpcClient(t)
+	client, ctx := grpcPort.GetGrpcClient(t)
 
 	user, err := client.CreateUser(ctx, &proto.CreateUserRequest{Name: "Oleg", Email: "pushkin@ya.ru"})
 	assert.NoError(t, err)
@@ -350,7 +351,7 @@ func TestChangeUserGrpc(t *testing.T) {
 }
 
 func TestGetUserGrpc(t *testing.T) {
-	client, ctx := getGrpcClient(t)
+	client, ctx := grpcPort.GetGrpcClient(t)
 
 	user, err := client.CreateUser(ctx, &proto.CreateUserRequest{Name: "Oleg", Email: "pushkin@ya.ru"})
 	assert.NoError(t, err)
@@ -365,7 +366,7 @@ func TestGetUserGrpc(t *testing.T) {
 }
 
 func TestRemoveUserGrpc(t *testing.T) {
-	client, ctx := getGrpcClient(t)
+	client, ctx := grpcPort.GetGrpcClient(t)
 
 	user, err := client.CreateUser(ctx, &proto.CreateUserRequest{Name: "Oleg", Email: "pushkin@ya.ru"})
 	assert.NoError(t, err)
