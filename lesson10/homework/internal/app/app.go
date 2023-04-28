@@ -48,7 +48,7 @@ type AdApp struct {
 
 func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) (ads.Ad, error) {
 	if contextEnd(ctx) {
-		return ads.Ad{}, nil
+		return ads.Ad{}, ErrInternal
 	}
 	_, contain := a.UserRepo.Get(userId)
 	if !contain {
@@ -142,10 +142,8 @@ func (a *AdApp) RemoveAd(ctx context.Context, adId, userId int64) (ads.Ad, error
 }
 
 func (a *AdApp) ListAds(ctx context.Context) []ads.Ad {
-	select {
-	case <-ctx.Done():
+	if contextEnd(ctx) {
 		return []ads.Ad{}
-	default:
 	}
 	var result []ads.Ad
 	for i := int64(0); i < a.Repo.GetCurAvailableId(); i++ {
@@ -186,8 +184,6 @@ func (a *AdApp) UpdateUser(ctx context.Context, userId int64, data string, m Met
 		user.Email = data
 	} else if m == ChangeNickname {
 		user.Nickname = data
-	} else {
-		panic(m)
 	}
 	return *user, nil
 }
