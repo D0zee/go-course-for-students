@@ -294,6 +294,7 @@ func (s *adSuite) TestAccessOnly() {
 
 	// request from another user
 	anotherUser, err := s.app.CreateUser(s.ctx, "Kolya", "email#tinkoff")
+	s.Nil(err)
 	ad, err = s.app.GetAdById(s.ctx, s.dftAd.ID, anotherUser.Id)
 	s.Empty(ad)
 	s.NotNil(err)
