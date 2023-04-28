@@ -303,3 +303,27 @@ func (s *adSuite) TestAccessOnly() {
 func TestAd(t *testing.T) {
 	suite.Run(t, new(adSuite))
 }
+
+// two benchmarks which compare repo with map and repo with slice implementation
+
+func BenchmarkCreateAdWithMapRepo(b *testing.B) {
+	mr := repo.NewAdRepo()
+	a := NewApp(mr, repo.NewUserRepo())
+	ctx := context.Background()
+	user, _ := a.CreateUser(ctx, "Иван", "tinkoff@com")
+
+	for i := 0; i < b.N; i++ {
+		_, _ = a.CreateAd(ctx, "hello", "world", user.Id)
+	}
+}
+
+func BenchmarkCreateAdWithSliceRepo(b *testing.B) {
+	mr := repo.NewSliceAdRepo()
+	a := NewApp(mr, repo.NewUserRepo())
+	ctx := context.Background()
+	user, _ := a.CreateUser(ctx, "Иван", "tinkoff@com")
+
+	for i := 0; i < b.N; i++ {
+		_, _ = a.CreateAd(ctx, "hello", "world", user.Id)
+	}
+}

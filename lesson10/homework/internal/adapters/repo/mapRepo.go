@@ -12,13 +12,13 @@ type Repository[T any] interface {
 	GetCurAvailableId() int64
 }
 
-type myRepo[T any] struct {
+type mapRepo[T any] struct {
 	mx      *sync.RWMutex
 	CurId   int64
 	IdToObj map[int64]*T
 }
 
-func (r *myRepo[T]) Insert(obj *T) {
+func (r *mapRepo[T]) Insert(obj *T) {
 	r.mx.Lock()
 	defer r.mx.Unlock()
 
@@ -26,7 +26,7 @@ func (r *myRepo[T]) Insert(obj *T) {
 	r.CurId++
 }
 
-func (r *myRepo[T]) Get(id int64) (*T, bool) {
+func (r *mapRepo[T]) Get(id int64) (*T, bool) {
 	r.mx.Lock()
 	defer r.mx.Unlock()
 
@@ -38,18 +38,18 @@ func (r *myRepo[T]) Get(id int64) (*T, bool) {
 	return value, true
 }
 
-func (r *myRepo[T]) GetCurAvailableId() int64 {
+func (r *mapRepo[T]) GetCurAvailableId() int64 {
 	r.mx.RLock()
 	defer r.mx.RUnlock()
 	return r.CurId
 }
 
 func NewAdRepo() Repository[ads.Ad] {
-	return &myRepo[ads.Ad]{mx: &sync.RWMutex{}, CurId: 0,
+	return &mapRepo[ads.Ad]{mx: &sync.RWMutex{}, CurId: 0,
 		IdToObj: make(map[int64]*ads.Ad)}
 }
 
 func NewUserRepo() Repository[users.User] {
-	return &myRepo[users.User]{mx: &sync.RWMutex{}, CurId: 0,
+	return &mapRepo[users.User]{mx: &sync.RWMutex{}, CurId: 0,
 		IdToObj: make(map[int64]*users.User)}
 }
