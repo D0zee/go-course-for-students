@@ -64,7 +64,7 @@ type testClient struct {
 
 func getTestClient() *testClient {
 	ctx := context.Background()
-	server := httpgin.NewHTTPServer(ctx, ":18080", app.NewApp(repo.NewAdRepo(), repo.NewUserRepo()))
+	server := httpgin.NewHTTPServer(ctx, ":18080", app.NewApp(repo.NewMapAdRepo(), repo.NewUserRepo()))
 	testServer := httptest.NewServer(server.Server.Handler)
 
 	return &testClient{
@@ -85,7 +85,7 @@ func getGrpcClient(t *testing.T) (proto.AdServiceClient, context.Context) {
 		srv.Stop()
 	})
 
-	svc := grpcPort.NewService(app.NewApp(repo.NewAdRepo(), repo.NewUserRepo()))
+	svc := grpcPort.NewService(app.NewApp(repo.NewMapAdRepo(), repo.NewUserRepo()))
 	proto.RegisterAdServiceServer(srv, svc)
 
 	go func() {

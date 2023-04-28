@@ -7,7 +7,7 @@ import (
 )
 
 func TestRepo(t *testing.T) {
-	repo := NewAdRepo()
+	repo := NewMapAdRepo()
 	assert.NotNil(t, repo)
 
 	// test only adRepo implementation because Repository is template struct

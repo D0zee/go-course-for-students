@@ -44,7 +44,7 @@ func (r *mapRepo[T]) GetCurAvailableId() int64 {
 	return r.CurId
 }
 
-func NewAdRepo() Repository[ads.Ad] {
+func NewMapAdRepo() Repository[ads.Ad] {
 	return &mapRepo[ads.Ad]{mx: &sync.RWMutex{}, CurId: 0,
 		IdToObj: make(map[int64]*ads.Ad)}
 }

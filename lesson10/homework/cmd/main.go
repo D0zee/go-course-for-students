@@ -21,7 +21,7 @@ const (
 
 func main() {
 
-	a := app.NewApp(repo.NewAdRepo(), repo.NewUserRepo())
+	a := app.NewApp(repo.NewMapAdRepo(), repo.NewUserRepo())
 
 	eg, ctx := errgroup.WithContext(context.Background())
 

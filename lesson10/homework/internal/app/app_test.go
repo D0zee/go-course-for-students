@@ -25,7 +25,7 @@ type UserSuit struct {
 func (s *UserSuit) SetupTest() {
 	s.ctx = context.Background()
 	s.userRepo = repo.NewUserRepo()
-	s.app = NewApp(repo.NewAdRepo(), s.userRepo)
+	s.app = NewApp(repo.NewMapAdRepo(), s.userRepo)
 	s.nickname = "aboba"
 	s.nickname = "aboba"
 
@@ -126,7 +126,7 @@ type adSuite struct {
 
 func (s *adSuite) SetupTest() {
 	s.ctx = context.Background()
-	s.adRepo = repo.NewAdRepo()
+	s.adRepo = repo.NewMapAdRepo()
 	s.app = NewApp(s.adRepo, repo.NewUserRepo())
 	s.dftTitle = "hello"
 	s.dftText = "world"
@@ -307,7 +307,7 @@ func TestAd(t *testing.T) {
 // two benchmarks which compare repo with map and repo with slice implementation
 
 func BenchmarkCreateAdWithMapRepo(b *testing.B) {
-	mr := repo.NewAdRepo()
+	mr := repo.NewMapAdRepo()
 	a := NewApp(mr, repo.NewUserRepo())
 	ctx := context.Background()
 	user, _ := a.CreateUser(ctx, "Иван", "tinkoff@com")
