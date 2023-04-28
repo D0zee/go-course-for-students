@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/D0zee/advalidator"
-	"homework9/internal/adapters/adrepo"
+	"homework9/internal/adapters/repo"
 	"homework9/internal/ads"
 	"homework9/internal/users"
 	"time"
@@ -42,8 +42,8 @@ func contextEnd(ctx context.Context) bool {
 }
 
 type AdApp struct {
-	Repo     adrepo.Repository[ads.Ad]
-	UserRepo adrepo.Repository[users.User]
+	Repo     repo.Repository[ads.Ad]
+	UserRepo repo.Repository[users.User]
 }
 
 func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) (ads.Ad, error) {
@@ -211,6 +211,6 @@ func (a *AdApp) GetUser(ctx context.Context, userId int64) (users.User, error) {
 	return *user, nil
 }
 
-func NewApp(repo adrepo.Repository[ads.Ad], urepo adrepo.Repository[users.User]) App {
+func NewApp(repo repo.Repository[ads.Ad], urepo repo.Repository[users.User]) App {
 	return &AdApp{Repo: repo, UserRepo: urepo}
 }

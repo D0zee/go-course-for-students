@@ -1,4 +1,4 @@
-package adrepo
+package repo
 
 import (
 	"github.com/stretchr/testify/assert"

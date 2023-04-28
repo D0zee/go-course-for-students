@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"homework9/internal/adapters/adrepo"
+	"homework9/internal/adapters/repo"
 	"homework9/internal/app"
 	"homework9/internal/ports/httpgin"
 )
@@ -64,7 +64,7 @@ type testClient struct {
 
 func getTestClient() *testClient {
 	ctx := context.Background()
-	server := httpgin.NewHTTPServer(ctx, ":18080", app.NewApp(adrepo.NewAdRepo(), adrepo.NewUserRepo()))
+	server := httpgin.NewHTTPServer(ctx, ":18080", app.NewApp(repo.NewAdRepo(), repo.NewUserRepo()))
 	testServer := httptest.NewServer(server.Server.Handler)
 
 	return &testClient{
@@ -85,7 +85,7 @@ func getGrpcClient(t *testing.T) (proto.AdServiceClient, context.Context) {
 		srv.Stop()
 	})
 
-	svc := grpcPort.NewService(app.NewApp(adrepo.NewAdRepo(), adrepo.NewUserRepo()))
+	svc := grpcPort.NewService(app.NewApp(repo.NewAdRepo(), repo.NewUserRepo()))
 	proto.RegisterAdServiceServer(srv, svc)
 
 	go func() {

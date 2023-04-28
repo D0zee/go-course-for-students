@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"github.com/stretchr/testify/suite"
-	"homework9/internal/adapters/adrepo"
+	"homework9/internal/adapters/repo"
 	"homework9/internal/ads"
 	"homework9/internal/users"
 	"strings"
@@ -15,7 +15,7 @@ type UserSuit struct {
 	suite.Suite
 	ctx      context.Context
 	app      App
-	userRepo adrepo.Repository[users.User]
+	userRepo repo.Repository[users.User]
 	dftUser  users.User
 
 	nickname string
@@ -24,8 +24,8 @@ type UserSuit struct {
 
 func (s *UserSuit) SetupTest() {
 	s.ctx = context.Background()
-	s.userRepo = adrepo.NewUserRepo()
-	s.app = NewApp(adrepo.NewAdRepo(), s.userRepo)
+	s.userRepo = repo.NewUserRepo()
+	s.app = NewApp(repo.NewAdRepo(), s.userRepo)
 	s.nickname = "aboba"
 	s.nickname = "aboba"
 
@@ -116,7 +116,7 @@ type adSuite struct {
 	suite.Suite
 	ctx     context.Context
 	app     App
-	adRepo  adrepo.Repository[ads.Ad]
+	adRepo  repo.Repository[ads.Ad]
 	dftUser users.User
 	dftAd   ads.Ad
 
@@ -126,8 +126,8 @@ type adSuite struct {
 
 func (s *adSuite) SetupTest() {
 	s.ctx = context.Background()
-	s.adRepo = adrepo.NewAdRepo()
-	s.app = NewApp(s.adRepo, adrepo.NewUserRepo())
+	s.adRepo = repo.NewAdRepo()
+	s.app = NewApp(s.adRepo, repo.NewUserRepo())
 	s.dftTitle = "hello"
 	s.dftText = "world"
 

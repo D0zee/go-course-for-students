@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"golang.org/x/sync/errgroup"
-	"homework9/internal/adapters/adrepo"
+	"homework9/internal/adapters/repo"
 	"homework9/internal/app"
 	grpc "homework9/internal/ports/grpcPort"
 	"homework9/internal/ports/httpgin"
@@ -21,7 +21,7 @@ const (
 
 func main() {
 
-	a := app.NewApp(adrepo.NewAdRepo(), adrepo.NewUserRepo())
+	a := app.NewApp(repo.NewAdRepo(), repo.NewUserRepo())
 
 	eg, ctx := errgroup.WithContext(context.Background())
 

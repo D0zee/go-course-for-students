@@ -1,4 +1,4 @@
-package adrepo
+package repo
 
 import (
 	"homework9/internal/ads"
