@@ -2,13 +2,16 @@ package grpcPort
 
 import (
 	"context"
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
 	"homework9/internal/adapters/repo"
+	"homework9/internal/ads"
 	"homework9/internal/app"
+	"homework9/internal/mocks"
 	"homework9/internal/ports/grpcPort/proto"
 	"homework9/internal/ports/grpcPort/service"
 	"homework9/internal/users"
@@ -60,9 +63,43 @@ func GetGrpcClient(t *testing.T) (proto.AdServiceClient, context.Context) {
 	return getGrpcClient(t, a)
 }
 
-func GetMockedGrpcClient(t *testing.T) (proto.AdServiceClient, context.Context) {
-	a := &app.AppMock{}
-	a.On("CreateUser", mock.AnythingOfType("string"), mock.AnythingOfType("string")).
-		Return(users.User{}, nil).Once()
+type Mode int64
+
+const (
+	HappyCase = iota
+	ErrorCase
+)
+
+func GetMockedGrpcClient(t *testing.T, mode Mode) (proto.AdServiceClient, context.Context) {
+	a := &mocks.App{}
+
+	err := errors.New("smth")
+	if mode == HappyCase {
+		err = nil
+	}
+
+	a.On("CreateUser", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+		Return(users.User{}, err).Once()
+	a.On("UpdateUser", mock.Anything, mock.AnythingOfType("int64"),
+		mock.AnythingOfType("string"), mock.Anything).
+		Return(users.User{}, err).Once()
+	a.On("GetUser", mock.Anything, mock.AnythingOfType("int64")).
+		Return(users.User{}, err).Once()
+	a.On("RemoveUser", mock.Anything, mock.AnythingOfType("int64")).
+		Return(users.User{}, err).Once()
+
+	a.On("CreateAd", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("int64")).Return(ads.Ad{}, err).Once()
+	a.On("UpdateAd", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"),
+		mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+		Return(ads.Ad{}, err).Once()
+	a.On("ChangeAdStatus", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"),
+		mock.AnythingOfType("bool")).
+		Return(ads.Ad{}, err).Once()
+	a.On("RemoveAd", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return(ads.Ad{}, err).Once()
+	a.On("GetAdById", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return(ads.Ad{}, err).Once()
+	a.On("ListAds", mock.Anything).
+		Return([]ads.Ad{}, err).Once()
 	return getGrpcClient(t, a)
 }

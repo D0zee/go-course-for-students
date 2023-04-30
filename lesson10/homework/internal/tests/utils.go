@@ -53,6 +53,10 @@ type testClient struct {
 	baseURL string
 }
 
+func IsSameTimes(t1, t2 time.Time) bool {
+	return t1.Year() == t2.Year() && t1.Month() == t2.Month() && t1.Day() == t2.Day()
+}
+
 func getTestClient() *testClient {
 	ctx := context.Background()
 	server := httpgin.NewHTTPServer(ctx, ":18080", app.NewApp(repo.NewMapAdRepo(), repo.NewUserRepo()))

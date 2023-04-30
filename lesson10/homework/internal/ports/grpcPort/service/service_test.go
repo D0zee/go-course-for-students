@@ -1,4 +1,4 @@
-package tests
+package service_test
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"homework9/internal/app"
 	"homework9/internal/ports/grpcPort"
 	"homework9/internal/ports/grpcPort/proto"
+	"homework9/internal/tests"
 	"testing"
 	"time"
 )
@@ -37,8 +38,8 @@ func TestCreateAdGrpc(t *testing.T) {
 	assert.Equal(t, response.Text, "world")
 	assert.Equal(t, response.AuthorId, int64(0))
 	assert.False(t, response.Published)
-	assert.True(t, isSameDate(response.CreationTime.AsTime(), time.Now().UTC()))
-	assert.True(t, isSameDate(response.UpdateTime.AsTime(), time.Now().UTC()))
+	assert.True(t, tests.IsSameTimes(response.CreationTime.AsTime(), time.Now().UTC()))
+	assert.True(t, tests.IsSameTimes(response.UpdateTime.AsTime(), time.Now().UTC()))
 }
 
 func TestChangeAdStatusGrpc(t *testing.T) {
@@ -65,7 +66,7 @@ func TestChangeAdStatusGrpc(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.True(t, response.Published)
-	assert.True(t, isSameDate(response.UpdateTime.AsTime(), time.Now().UTC()))
+	assert.True(t, tests.IsSameTimes(response.UpdateTime.AsTime(), time.Now().UTC()))
 
 	// error when try to change ad status from another user
 	_, err = client.ChangeAdStatus(ctx, &proto.ChangeAdStatusRequest{
@@ -102,7 +103,7 @@ func TestUpdateAdGrpc(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, response.Title, "not hello")
 	assert.Equal(t, response.Text, "not world")
-	assert.True(t, isSameDate(response.UpdateTime.AsTime(), time.Now().UTC()))
+	assert.True(t, tests.IsSameTimes(response.UpdateTime.AsTime(), time.Now().UTC()))
 
 	// error when try to change ad status from another user
 	_, err = client.UpdateAd(ctx, &proto.UpdateAdRequest{

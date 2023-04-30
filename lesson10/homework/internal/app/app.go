@@ -22,7 +22,7 @@ type App interface {
 	UpdateAd(ctx context.Context, adId, userId int64, title, text string) (ads.Ad, error)
 	GetAdById(ctx context.Context, adId, userId int64) (ads.Ad, error)
 	RemoveAd(ctx context.Context, adId, userId int64) (ads.Ad, error)
-	access(adId, userId int64) error
+	Access(adId, userId int64) error
 
 	ListAds(ctx context.Context) []ads.Ad
 
@@ -65,7 +65,7 @@ func (a *AdApp) CreateAd(ctx context.Context, title, text string, userId int64) 
 	return ad, nil
 }
 
-func (a *AdApp) access(adId, userId int64) error {
+func (a *AdApp) Access(adId, userId int64) error {
 	user, contain := a.UserRepo.Get(userId)
 	if !contain {
 		return ErrAccess
@@ -89,7 +89,7 @@ func (a *AdApp) ChangeAdStatus(ctx context.Context, adId, userId int64, publishe
 	if contextEnd(ctx) {
 		return ads.Ad{}, ErrInternal
 	}
-	if err := a.access(adId, userId); err != nil {
+	if err := a.Access(adId, userId); err != nil {
 		return ads.Ad{}, err
 	}
 	ad, _ := a.Repo.Get(adId)
@@ -102,7 +102,7 @@ func (a *AdApp) UpdateAd(ctx context.Context, adId, userId int64, title, text st
 	if contextEnd(ctx) {
 		return ads.Ad{}, ErrInternal
 	}
-	if err := a.access(adId, userId); err != nil {
+	if err := a.Access(adId, userId); err != nil {
 		return ads.Ad{}, err
 	}
 	ad, _ := a.Repo.Get(adId)
@@ -122,7 +122,7 @@ func (a *AdApp) GetAdById(ctx context.Context, adId, userId int64) (ads.Ad, erro
 	if contextEnd(ctx) {
 		return ads.Ad{}, ErrInternal
 	}
-	if err := a.access(adId, userId); err != nil {
+	if err := a.Access(adId, userId); err != nil {
 		return ads.Ad{}, err
 	}
 	ad, _ := a.Repo.Get(adId)
@@ -133,7 +133,7 @@ func (a *AdApp) RemoveAd(ctx context.Context, adId, userId int64) (ads.Ad, error
 	if contextEnd(ctx) {
 		return ads.Ad{}, ErrInternal
 	}
-	if err := a.access(adId, userId); err != nil {
+	if err := a.Access(adId, userId); err != nil {
 		return ads.Ad{}, err
 	}
 	ad, _ := a.Repo.Get(adId)
