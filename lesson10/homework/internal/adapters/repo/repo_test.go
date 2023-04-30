@@ -45,3 +45,32 @@ func TestRepo(t *testing.T) {
 	}
 
 }
+
+func FuzzRepo(f *testing.F) {
+
+	// stress test for different degrees of load on service
+	testcases := []int64{10, 100, 5000, 1000000}
+
+	for _, tc := range testcases {
+		f.Add(tc)
+	}
+	repo := NewMapAdRepo()
+
+	go func() {
+		for {
+			obj := &ads.Ad{
+				ID: repo.GetCurAvailableId(),
+			}
+			repo.Insert(obj)
+		}
+	}()
+
+	f.Fuzz(func(t *testing.T, id int64) {
+		_, contain := repo.Get(id)
+		if contain && repo.GetCurAvailableId() <= id ||
+			!contain && repo.GetCurAvailableId() > id {
+			t.Fatalf("slice don't work right")
+		}
+
+	})
+}
