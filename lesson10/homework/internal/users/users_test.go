@@ -6,6 +6,7 @@ import (
 )
 
 type testCase struct {
+	TestName string
 	Id       int64
 	Nickname string
 	Email    string
@@ -15,6 +16,7 @@ type testCase struct {
 
 func TestCreatingUser(t *testing.T) {
 	testCases := []testCase{{
+		TestName: "standard creating",
 		Id:       10,
 		Nickname: "Nikolai",
 		Email:    "work@yandex.ru",
@@ -26,6 +28,7 @@ func TestCreatingUser(t *testing.T) {
 		},
 	},
 		{
+			TestName: "Russian letters",
 			Id:       0,
 			Nickname: "Иван",
 			Email:    "русскаяраскладка@tinkoff.com",
@@ -38,6 +41,7 @@ func TestCreatingUser(t *testing.T) {
 		},
 
 		{
+			TestName: "empty fields",
 			Id:       -1,
 			Nickname: "",
 			Email:    "",
@@ -51,9 +55,11 @@ func TestCreatingUser(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		userFromFunc := New(test.Id, test.Nickname, test.Email)
-		if !reflect.DeepEqual(userFromFunc, test.Expected) {
-			t.Fatalf(`testCreatingUser: expect %v got %v`, test.Expected, userFromFunc)
-		}
+		t.Run(test.TestName, func(t *testing.T) {
+			userFromFunc := New(test.Id, test.Nickname, test.Email)
+			if !reflect.DeepEqual(userFromFunc, test.Expected) {
+				t.Fatalf(`testCreatingUser: expect %v got %v`, test.Expected, userFromFunc)
+			}
+		})
 	}
 }
