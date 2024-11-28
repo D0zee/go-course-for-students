@@ -217,6 +217,130 @@ func TestValidate(t *testing.T) {
 				return true
 			},
 		},
+		{
+			name: "LEN: all elements of slices is valid",
+			args: args{
+				v: struct {
+					MaxA []string `validate:"len:1"`
+					MaxB []string `validate:"len:2"`
+				}{
+					MaxA: []string{"e"},
+					MaxB: []string{"aa"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "LEN: wrong len and wrong annotation",
+			args: args{
+				v: struct {
+					MaxA []string `validate:"len:1"`
+					MaxB []string `validate:"len:2"`
+
+					wrongAn1 []string `validate:"len:-2"` // error
+					wrongAn2 []string `validate:"len:"`   // error
+					wrongAn3 []string `validate:"len:fd"` // error
+					empty    []string `validate:"len:1"`  // error
+
+				}{
+					MaxA:     []string{"e", "12", "asdf"}, // 2 errors
+					MaxB:     []string{"aa", "1"},         // error
+					wrongAn1: []string{},
+					wrongAn2: []string{},
+					wrongAn3: []string{},
+					empty:    []string{},
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 7)
+				return true
+			},
+		},
+
+		{
+			name: "MIN/MAX: all is right",
+			args: args{
+				v: struct {
+					MaxA    []string `validate:"max:3"`
+					MaxB    []string `validate:"min:2"`
+					MaxInt  []int    `validate:"min:-5"`
+					MaxInt2 []int    `validate:"max:5"`
+					//MaxEmpty []int    `validate:"max:0"`
+				}{
+					MaxA:    []string{"e", "12", "asd"},
+					MaxB:    []string{"aa", "122"},
+					MaxInt:  []int{-5, 1, 0, 2, 65, 100},
+					MaxInt2: []int{1, -1, 0, 5, 4},
+					//MaxEmpty: []int{},
+				},
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "MIN/MAX: errors",
+			args: args{
+				v: struct {
+					MaxA     []string `validate:"max:abadsf"` // error
+					MaxB     []string `validate:"min:"`       // error
+					MaxInt   []int    `validate:"min:-5"`
+					wrongMax []int    `validate:"max:5"`
+				}{
+					MaxA:     []string{"e", "12", "asd"}, //
+					MaxB:     []string{"aa", "122"},
+					MaxInt:   []int{},
+					wrongMax: []int{100}, // error
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 3)
+				return true
+			},
+		},
+
+		{
+			name: "SLICE: all is right IN",
+			args: args{
+				v: struct {
+					InA     []string `validate:"in:ab,cd"`
+					InB     []string `validate:"in:aa,bb,cd,ee"`
+					InC     []int    `validate:"in:1,2,3"`
+					InD     []int    `validate:"in:5"`
+					InEmpty []int    `validate:"in:5"`
+				}{
+					InA:     []string{"ab", "ab"},
+					InB:     []string{"aa", "bb", "cd", "ee"},
+					InC:     []int{1, 2, 3},
+					InD:     []int{5, 5, 5},
+					InEmpty: []int{},
+				},
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "SLICE: wrong in",
+			args: args{
+				v: struct {
+					InA []string `validate:"in:ab,cd"`
+					InB []string `validate:"in:,,,"`
+					InC []int    `validate:"in:1,2,3"`
+					InD []int    `validate:"in:fdsa"` // error
+				}{
+					InA: []string{"ab", "ba"}, // error because of "ba"
+					InB: []string{"", ""},
+					InC: []int{1, 2, 4, 6}, // 2 errors because of 4 and 6
+					InD: []int{5, 5, 5},
+				},
+			},
+			wantErr: true,
+			checkErr: func(err error) bool {
+				assert.Len(t, err.(ValidationErrors), 4)
+				return true
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
